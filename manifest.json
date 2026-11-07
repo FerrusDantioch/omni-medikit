@@ -1,7 +1,7 @@
 {
   "name": "Omni-MediKit",
   "short_name": "Omni-MediKit",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Suivi de traitements médicaux familial, 100 % hors ligne. Profils, médicaments, vaccins, contacts médicaux et urgences, stockés localement sur l'appareil.",
   "lang": "fr",
   "dir": "ltr",
@@ -15,7 +15,35 @@
   "icons": [
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Aujourd'hui",
+      "short_name": "Aujourd'hui",
+      "description": "Ouvrir directement le suivi du jour",
+      "url": "./#accueil",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Urgences",
+      "short_name": "Urgences",
+      "description": "Ouvrir directement les numéros d'urgence",
+      "url": "./#urgences",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": { "application/json": [".json"] }
+    }
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  }
 }

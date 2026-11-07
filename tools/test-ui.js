@@ -16,24 +16,33 @@ Object.defineProperty(Req.prototype, 'onerror', {
 
 const memoire = {};
 function storeData(nom) { return memoire[nom] || (memoire[nom] = new Map()); }
+function makeStore(nom) {
+  const data = storeData(nom);
+  const os = {
+    indexNames: { contains: () => false },
+    createIndex() {},
+    getAll: () => new Req(Array.from(data.values())),
+    get: (id) => new Req(data.get(id)),
+    put: (o) => { data.set(o.id, o); return new Req(o.id); },
+    delete: (id) => { data.delete(id); return new Req(undefined); },
+    clear: () => { data.clear(); return new Req(undefined); },
+    index: () => ({ getAll: () => new Req([]) })
+  };
+  return os;
+}
 const dbStub = {
   objectStoreNames: { contains: () => false },
-  createObjectStore: () => {},
-  transaction(nom) {
-    const data = storeData(nom);
-    const os = {
-      indexNames: { contains: () => false },
-      getAll: () => new Req(Array.from(data.values())),
-      get: (id) => new Req(data.get(id)),
-      put: (o) => { data.set(o.id, o); return new Req(o.id); },
-      delete: (id) => { data.delete(id); return new Req(undefined); },
-      clear: () => { data.clear(); return new Req(undefined); },
-      index: () => os
-    };
-    return { objectStore: () => os };
+  createObjectStore: (nom) => { storeData(nom); return makeStore(nom); },
+  transaction(nom) { return { objectStore: () => makeStore(nom) }; }
+};
+globalThis.indexedDB = {
+  open: () => {
+    const r = new Req(dbStub);
+    r.transaction = { objectStore: (nom) => makeStore(nom) };
+    queueMicrotask(() => { if (r.onupgradeneeded) r.onupgradeneeded({ target: r }); });
+    return r;
   }
 };
-globalThis.indexedDB = { open: () => { const r = new Req(dbStub); queueMicrotask(() => { if (r.onupgradeneeded) r.onupgradeneeded({ target: r }); }); return r; } };
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const ids = [...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1]);
@@ -62,11 +71,22 @@ function makeEl(id) {
 }
 const elMap = {};
 for (const id of ids) elMap[id] = makeEl(id);
+for (const m of html.matchAll(/<\w+[^>]*\bhidden\b[^>]*>/g)) {
+  const idm = /id="([^"]+)"/.exec(m[0]);
+  if (idm && elMap[idm[1]]) elMap[idm[1]].hidden = true;
+}
 const themeBtns = ['charte', 'sombre', 'clair'].map((t) => { const b = makeEl(); b.dataset.theme = t; b.textContent = t; return b; });
 const navBtns = navVues.map((v) => { const b = makeEl(); b.dataset.vue = v; return b; });
 const sectionEls = sections.map((id) => elMap[id] || (elMap[id] = makeEl(id)));
 
 globalThis.window = globalThis;
+globalThis.addEventListener = () => {};
+globalThis.print = () => {};
+Object.defineProperty(globalThis, 'location', {
+  value: { hash: '', search: '', pathname: '/', reload() {} },
+  configurable: true
+});
+globalThis.history = { replaceState() {} };
 globalThis.document = {
   documentElement: { dataset: {}, setAttribute() {} },
   body: makeEl('body'),
@@ -84,12 +104,17 @@ globalThis.document = {
   }
 };
 globalThis.localStorage = { _m: {}, getItem(k) { return this._m[k] || null; }, setItem(k, v) { this._m[k] = String(v); } };
-const swRegStub = { addEventListener() {}, update: () => Promise.resolve(), waiting: null, installing: null };
+const swWorkerStub = { postMessage() {} };
+const swRegStub = {
+  active: swWorkerStub,
+  addEventListener() {}, update: () => Promise.resolve(), waiting: null, installing: null
+};
 Object.defineProperty(globalThis, 'navigator', {
   value: {
     serviceWorker: {
       controller: null,
       addEventListener() {},
+      ready: Promise.resolve(swRegStub),
       register: () => Promise.resolve(swRegStub)
     }
   },
@@ -146,7 +171,18 @@ const DB = require(path.join(ROOT, 'js/db.js'));
   ok(sectionEls.find((s) => s.id === 'vue-accueil').hidden === false, 'vue accueil visible');
   ok($('toast') !== undefined, 'toast présent');
   ok($('bandeau-mise-a-jour').hidden === true, 'bandeau mise à jour caché sans nouvelle version');
-  ok($('version-app').textContent === 'v1.0.1', 'version affichée: ' + $('version-app').textContent);
+  ok($('version-app').textContent === 'v1.1.0', 'version affichée: ' + $('version-app').textContent);
+  ok($('verrou').hidden === true, 'écran de verrouillage masqué (verrouillage inactif)');
+  ok(html.includes('id="recherche-traitements"') && html.includes('id="recherche-contacts"'), 'champs de recherche présents');
+  ok(html.includes('id="opt-rappels"') && html.includes('id="btn-verrou"'), 'blocs Rappels et Verrouillage présents');
+  const man = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
+  ok(man.version === '1.1.0' && Array.isArray(man.shortcuts) && man.shortcuts.length === 2, 'manifest v1.1.0 + 2 raccourcis');
+  ok(Array.isArray(man.file_handlers) && man.share_target, 'file_handlers + share_target présents');
+  ok(man.icons.some((i) => i.sizes === '384x384'), 'icône 384 présente');
+  const sw = fs.readFileSync(path.join(ROOT, 'js/../sw.js'), 'utf8');
+  ok(sw.includes('notificationclick') && sw.includes('launchQueue') && sw.includes('demander-fichier'), 'sw.js : notifications + import fichier (launchQueue)');
+  const db = fs.readFileSync(path.join(ROOT, 'js/db.js'), 'utf8');
+  ok(db.includes('DB_VERSION = 2') && db.includes('byTreatment'), 'db.js v2 avec index');
   ok(html.includes('btn-mise-a-jour') && html.includes('btn-verifier-maj'), 'boutons « Mettre à jour » présents (bandeau + réglages)');
   const posAccueil = html.indexOf('id="vue-accueil"');
   const posBandeau = html.indexOf('id="bandeau-mise-a-jour"');
@@ -155,4 +191,5 @@ const DB = require(path.join(ROOT, 'js/db.js'));
 
   if (echecs) { console.error('\n' + echecs + ' échec(s)'); process.exit(1); }
   console.log('\nTest UI (rendu complet avec données) : tous les contrôles passent.');
+  process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

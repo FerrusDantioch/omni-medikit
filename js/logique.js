@@ -174,6 +174,8 @@
     }
     if (f.type === 'jours' && (!Array.isArray(f.jours) || !f.jours.length))
       erreurs.frequence = 'Cochez au moins un jour de la semaine.';
+    if (t.reminderTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(t.reminderTime))
+      erreurs.reminderTime = 'Heure de rappel invalide (format HH:MM).';
     return { ok: Object.keys(erreurs).length === 0, erreurs };
   }
 

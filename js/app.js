@@ -27,8 +27,14 @@
     filtreTraitements: '',
     filtreVaccins: '',
     filtreContacts: '',
+    rechercheTraitements: '',
+    rechercheContacts: '',
+    rappels: false,
+    lock: null,
     theme: 'charte'
   };
+
+  const VUES = ['accueil', 'traitements', 'vaccins', 'contacts', 'urgences', 'profils', 'reglages'];
 
   const $ = (sel, el) => (el || document).querySelector(sel);
   const $$ = (sel, el) => Array.from((el || document).querySelectorAll(sel));
@@ -70,6 +76,8 @@
     if (etat.duo.a && !profil(etat.duo.a)) etat.duo.a = etat.profilActif;
     if (etat.duo.b && !profil(etat.duo.b)) etat.duo.b = null;
     etat.theme = await DB.getSetting('theme', 'charte');
+    etat.rappels = await DB.getSetting('rappels', false);
+    etat.lock = await DB.getSetting('lock', null);
   }
 
   async function sauvegarderCle(cle, valeur) { await DB.setSetting(cle, valeur); }
@@ -94,6 +102,7 @@
       else b.removeAttribute('aria-current');
     });
     window.scrollTo({ top: 0 });
+    try { history.replaceState(null, '', '#' + vue); } catch (e) {}
   }
 
   function optionsProfils(select, valeur, avecToutes) {
@@ -137,7 +146,7 @@
     const fin = t.lifetime ? 'traitement à vie' : 'fin le ' + L.formaterDateCourte(t.endDate);
     return '<div class="med">' +
       '<div><div class="nom">' + esc(t.name) + (t.dosage ? ' — ' + esc(t.dosage) : '') + '</div>' +
-      '<div class="detail">' + esc(L.decrireFrequence(t.frequency)) + ' · début ' + L.formaterDateCourte(t.startDate) + ' · ' + fin + '</div></div>' +
+      '<div class="detail">' + esc(L.decrireFrequence(t.frequency)) + ' · début ' + L.formaterDateCourte(t.startDate) + (t.reminderTime ? ' · rappel à ' + esc(t.reminderTime) : '') + ' · ' + fin + '</div></div>' +
       (avecBouton ? actionPriseHTML(t, today) : '') + '</div>';
   }
 
@@ -266,6 +275,7 @@
     const el = $('#liste-traitements');
     let liste = etat.treatments.slice();
     if (etat.filtreTraitements) liste = liste.filter((t) => t.profileId === etat.filtreTraitements);
+    if (etat.rechercheTraitements) liste = liste.filter((t) => (t.name + ' ' + (t.dosage || '') + ' ' + (t.note || '')).toLowerCase().includes(etat.rechercheTraitements));
     const today = L.aujourdhui();
     const ordre = { 'en-cours': 0, 'bientot-termine': 1, 'a-vie': 2, 'a-venir': 3, 'termine': 4 };
     liste.sort((a, b) => {
@@ -281,7 +291,7 @@
       const programme = actif && L.estProgrammeLe(t.frequency, today);
       return '<article class="ligne-carte">' +
         '<div class="titre"><h3>' + esc(t.name) + (t.dosage ? ' <span class="meta">· ' + esc(t.dosage) + '</span>' : '') + '</h3>' + statutPill(t, today) + '</div>' +
-        '<p class="meta">' + esc(nomProfil(t.profileId)) + ' · ' + esc(L.decrireFrequence(t.frequency)) + ' · début ' + L.formaterDateCourte(t.startDate) +
+        '<p class="meta">' + esc(nomProfil(t.profileId)) + ' · ' + esc(L.decrireFrequence(t.frequency)) + (t.reminderTime ? ' · rappel à ' + esc(t.reminderTime) : '') + ' · début ' + L.formaterDateCourte(t.startDate) +
         (t.lifetime ? ' · <strong>à vie</strong>' : ' · fin ' + L.formaterDateCourte(t.endDate)) + '</p>' +
         (t.note ? '<p class="meta">' + esc(t.note) + '</p>' : '') +
         '<div class="actions">' +
@@ -326,6 +336,7 @@
     const el = $('#liste-contacts');
     let liste = etat.contacts.slice();
     if (etat.filtreContacts) liste = liste.filter((c) => !c.profileId || c.profileId === etat.filtreContacts);
+    if (etat.rechercheContacts) liste = liste.filter((c) => (c.name + ' ' + (c.specialty || '') + ' ' + (c.address || '')).toLowerCase().includes(etat.rechercheContacts));
     liste.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
     if (!liste.length) {
       el.innerHTML = '<div class="encart"><p>Aucun contact médical enregistré.</p></div>';
@@ -380,6 +391,18 @@
     $('#info-donnees').textContent = etat.profiles.length + ' profil(s), ' + etat.treatments.length +
       ' traitement(s), ' + etat.doses.length + ' prise(s), ' + etat.vaccines.length + ' vaccin(s), ' +
       etat.contacts.length + ' contact(s) — ' + total + ' enregistrement(s) au total, stockés localement.';
+    const verrouActif = !!(etat.lock && etat.lock.enabled);
+    $('#info-verrou').textContent = verrouActif ? 'Verrouillage actif : un code est demandé à l’ouverture.' : 'Verrouillage inactif.';
+    $('#btn-verrou').textContent = verrouActif ? 'Modifier le code' : 'Activer le verrouillage';
+    $('#btn-desactiver-verrou').hidden = !verrouActif;
+    $('#opt-rappels').checked = !!etat.rappels;
+    let infoRappels = etat.rappels ? 'Rappels actifs.' : 'Rappels désactivés.';
+    if (etat.rappels) {
+      infoRappels += ('Notification' in window && Notification.permission === 'granted')
+        ? ' Notifications autorisées par le navigateur.'
+        : ' Notifications non autorisées : seuls des messages internes seront affichés.';
+    }
+    $('#info-rappels').textContent = infoRappels;
   }
 
   function renderTout() {
@@ -390,6 +413,7 @@
     renderContacts();
     renderUrgences();
     renderReglages();
+    planifierRappels();
   }
 
   const modal = $('#modal');
@@ -503,6 +527,7 @@
       '<div class="checks"><label><input type="checkbox" name="lifetime"' + (t.lifetime ? ' checked' : '') + '> Traitement à vie (pas de date de fin, rappel permanent)</label></div>' +
       '<div class="champ" data-cle="endDate" id="champ-fin"><span>Date de fin</span><input type="date" name="endDate" value="' + esc(t.endDate || '') + '"><span class="erreur" data-erreur="endDate"></span></div>' +
       champ('Durée en jours (facultatif, calcule la date de fin)', '<input type="number" name="dureeJours" min="1" max="36500" placeholder="ex. 10">', 'La date de fin = début + durée − 1. Vous pouvez aussi saisir la date de fin directement.') +
+      champ('Heure de rappel (facultative)', '<input type="time" name="reminderTime" value="' + esc(t.reminderTime || '') + '">', 'Notification envoyée à cette heure, les jours de prise.') +
       '<fieldset><legend>Fréquence</legend>' +
       '<div class="radios" role="radiogroup" aria-label="Type de fréquence">' +
       '<label><input type="radio" name="freqType" value="quotidien"' + (f.type === 'quotidien' ? ' checked' : '') + '> Quotidienne (1 fois/jour)</label>' +
@@ -549,6 +574,7 @@
       endDate: lifetime ? '' : lireValeur(f, 'endDate'),
       lifetime: lifetime,
       frequency: frequency,
+      reminderTime: lireValeur(f, 'reminderTime') || '',
       note: lireValeur(f, 'note').trim(),
       createdAt: f.dataset.created || new Date().toISOString()
     };
@@ -696,19 +722,57 @@
     toast('Export JSON téléchargé.');
   }
 
-  async function importerDonnees(fichier) {
+  function validerImport(json) {
+    const errs = [];
+    const d = (json && json.data) || {};
+    const dateOk = (v) => !v || L.estDateValide(v);
+    for (const p of d.profiles || []) {
+      if (!p || typeof p.id !== 'string' || !p.name || !String(p.name).trim()) errs.push('profil sans nom valide');
+      else if (p.birthdate && !dateOk(p.birthdate)) errs.push('date de naissance invalide (profil « ' + p.name + ' »)');
+    }
+    for (const t of d.treatments || []) {
+      const v = L.validerTraitement(t || {});
+      if (!v.ok) errs.push('traitement « ' + ((t && t.name) || '?') + ' » : ' + Object.values(v.erreurs).join(' '));
+    }
+    for (const v of d.vaccines || []) {
+      const r = L.validerVaccin(v || {});
+      if (!r.ok) errs.push('vaccin « ' + ((v && v.name) || '?') + ' » : ' + Object.values(r.erreurs).join(' '));
+    }
+    for (const c of d.contacts || []) {
+      const r = L.validerContact(c || {});
+      if (!r.ok) errs.push('contact « ' + ((c && c.name) || '?') + ' » invalide');
+    }
+    for (const dose of d.doses || []) {
+      if (!dose || typeof dose.id !== 'string' || !dateOk(dose.date)) errs.push('prise invalide (' + (dose && dose.id) + ')');
+    }
+    for (const s of d.settings || []) {
+      if (!s || typeof s.id !== 'string') errs.push('réglage invalide');
+    }
+    return errs;
+  }
+
+  async function importerDepuisTexte(texte, nomFichier) {
     let json;
     try {
-      json = JSON.parse(await fichier.text());
+      json = JSON.parse(texte);
     } catch (e) {
       toast('Import impossible : le fichier n’est pas un JSON valide.', true);
+      return;
+    }
+    if (!json || json.app !== 'Omni-MediKit' || !json.data) {
+      toast('Import impossible : ce n’est pas une exportation Omni-MediKit.', true);
+      return;
+    }
+    const errs = validerImport(json);
+    if (errs.length) {
+      toast('Import refusé (' + errs.length + ' erreur(s)) : ' + errs.slice(0, 3).join(' | '), true);
       return;
     }
     confirmerSuppression(
       'Importer une sauvegarde',
       'L’import <strong>remplace toutes les données actuelles</strong> de l’application (' + etat.profiles.length + ' profil(s), ' +
       etat.treatments.length + ' traitement(s), ' + etat.doses.length + ' prise(s), ' + etat.vaccines.length + ' vaccin(s), ' +
-      etat.contacts.length + ' contact(s)) par le contenu du fichier « ' + esc(fichier.name) + ' ». Continuer ?',
+      etat.contacts.length + ' contact(s)) par le contenu de « ' + esc(nomFichier) + ' ». Continuer ?',
       async () => {
         try {
           await DB.importerTout(json);
@@ -727,7 +791,8 @@
     const action = cible.dataset.action;
     const id = cible.dataset.id;
     try {
-      if (action === 'pris') await prendreDose(id);
+      if (action === 'imprimer') { window.print(); }
+      else if (action === 'pris') await prendreDose(id);
       else if (action === 'annuler-prise') await annulerDernierePrise(id);
       else if (action === 'del-dose') {
         await DB.supprimer('doses', id);
@@ -870,13 +935,36 @@
   $('#btn-exporter').addEventListener('click', () => { exporterDonnees().catch((e) => toast('Export impossible : ' + e.message, true)); });
   $('#input-import').addEventListener('change', (e) => {
     const f = e.target.files[0];
-    if (f) importerDonnees(f);
+    if (f) f.text().then((t) => importerDepuisTexte(t, f.name));
     e.target.value = '';
   });
 
-  const VERSION_APP = '1.0.1';
+  $('#recherche-traitements').addEventListener('input', (e) => {
+    etat.rechercheTraitements = e.target.value.trim().toLowerCase();
+    renderTraitements();
+  });
+  $('#recherche-contacts').addEventListener('input', (e) => {
+    etat.rechercheContacts = e.target.value.trim().toLowerCase();
+    renderContacts();
+  });
+
+  $('#opt-rappels').addEventListener('change', async (e) => {
+    etat.rappels = e.target.checked;
+    await sauvegarderCle('rappels', etat.rappels);
+    if (etat.rappels && 'Notification' in window && Notification.permission === 'default') {
+      try { await Notification.requestPermission(); } catch (err) {}
+    }
+    renderReglages();
+    planifierRappels();
+  });
+
+  $('#btn-verrou').addEventListener('click', () => ouvrirModalVerrou(false));
+  $('#btn-desactiver-verrou').addEventListener('click', () => ouvrirModalVerrou(true));
+
+  const VERSION_APP = '1.1.0';
   let inscriptionSw = null;
   let miseAJourDemandee = false;
+  let minuteurRappel = null;
 
   function montrerMiseAJour() {
     const prete = !!(inscriptionSw && inscriptionSw.waiting && navigator.serviceWorker.controller);
@@ -934,19 +1022,170 @@
   $('#btn-mise-a-jour').addEventListener('click', (e) => appliquerMiseAJour(e.currentTarget));
   $('#btn-verifier-maj').addEventListener('click', (e) => appliquerMiseAJour(e.currentTarget));
 
+  async function hashPin(pin) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('omni-medikit:' + pin));
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function gererVerrouillage() {
+    const lock = await DB.getSetting('lock', null);
+    if (!lock || !lock.enabled) return;
+    if (!crypto.subtle) { toast('Verrouillage indisponible sur ce navigateur (contexte non sécurisé).', true); return; }
+    const el = $('#verrou');
+    el.hidden = false;
+    await new Promise((resolve) => {
+      const input = $('#verrou-code');
+      const btn = $('#verrou-ok');
+      const err = $('#verrou-erreur');
+      const verifier = async () => {
+        const pin = input.value.trim();
+        if (!/^\d{4,6}$/.test(pin)) { err.textContent = 'Code à 4 chiffres minimum.'; return; }
+        const h = await hashPin(pin);
+        if (h === lock.pinHash) { el.hidden = true; resolve(); }
+        else { err.textContent = 'Code incorrect.'; input.value = ''; input.focus(); }
+      };
+      btn.addEventListener('click', verifier);
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') verifier(); });
+      input.focus();
+    });
+  }
+
+  function ouvrirModalVerrou(desactiver) {
+    if (!crypto.subtle) { toast('Verrouillage indisponible sur ce navigateur (contexte non sécurisé).', true); return; }
+    const actif = !!(etat.lock && etat.lock.enabled);
+    let html;
+    if (desactiver && actif) {
+      html = '<p>Entrez le code actuel pour désactiver le verrouillage.</p>' +
+        '<div class="champ" data-cle="pinActuel"><span>Code actuel</span><input type="password" name="pinActuel" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pinActuel"></span></div>';
+    } else if (actif) {
+      html = '<p>Code actuel, puis nouveau code (laisser le nouveau vide pour conserver l’actuel).</p>' +
+        '<div class="champ" data-cle="pinActuel"><span>Code actuel</span><input type="password" name="pinActuel" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pinActuel"></span></div>' +
+        '<div class="champ" data-cle="pin1"><span>Nouveau code (4 à 6 chiffres, facultatif)</span><input type="password" name="pin1" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pin1"></span></div>';
+    } else {
+      html = '<p>Choisissez un code à 4 chiffres (jusqu’à 6). Il sera demandé à chaque ouverture de l’application sur cet appareil.</p>' +
+        '<div class="champ" data-cle="pin1"><span>Code</span><input type="password" name="pin1" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pin1"></span></div>' +
+        '<div class="champ" data-cle="pin2"><span>Confirmer le code</span><input type="password" name="pin2" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pin2"></span></div>';
+    }
+    ouvrirModal(
+      desactiver && actif ? 'Désactiver le verrouillage' : (actif ? 'Modifier le code de verrouillage' : 'Activer le verrouillage'),
+      html,
+      async () => {
+        const f = modalForm;
+        const pinActuel = lireValeur(f, 'pinActuel').trim();
+        const pin1 = lireValeur(f, 'pin1').trim();
+        const pin2 = lireValeur(f, 'pin2').trim();
+        const erreurs = {};
+        if (actif && (!/^\d{4,6}$/.test(pinActuel) || (await hashPin(pinActuel)) !== etat.lock.pinHash)) {
+          erreurs.pinActuel = 'Code actuel incorrect.';
+        }
+        if (desactiver && actif) {
+          if (Object.keys(erreurs).length) { afficherErreurs(erreurs); return; }
+          etat.lock = { enabled: false };
+          await DB.setSetting('lock', etat.lock);
+          renderReglages();
+          fermerModal();
+          toast('Verrouillage désactivé.');
+          return;
+        }
+        if (!actif) {
+          if (!/^\d{4,6}$/.test(pin1)) erreurs.pin1 = 'Code à 4 chiffres minimum.';
+          else if (pin1 !== pin2) erreurs.pin2 = 'Les deux codes ne correspondent pas.';
+        } else if (pin1 && !/^\d{4,6}$/.test(pin1)) {
+          erreurs.pin1 = 'Nouveau code à 4 chiffres minimum.';
+        }
+        if (Object.keys(erreurs).length) { afficherErreurs(erreurs); return; }
+        etat.lock = { enabled: true, pinHash: pin1 ? await hashPin(pin1) : etat.lock.pinHash };
+        await DB.setSetting('lock', etat.lock);
+        renderReglages();
+        fermerModal();
+        toast(actif ? 'Code modifié.' : 'Verrouillage activé : un code sera demandé à l’ouverture.');
+      });
+  }
+
+  function prochaineEcheanceRappel() {
+    const today = L.aujourdhui();
+    const now = new Date();
+    let best = null;
+    for (const t of etat.treatments) {
+      if (!t.reminderTime) continue;
+      if (!['en-cours', 'bientot-termine', 'a-vie'].includes(L.statutTraitement(t, today))) continue;
+      if (!L.estProgrammeLe(t.frequency, today)) continue;
+      const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(t.reminderTime);
+      if (!m) continue;
+      const d = new Date();
+      d.setHours(Number(m[1]), Number(m[2]), 0, 0);
+      if (d > now && (!best || d < best.date)) best = { date: d, t: t };
+    }
+    return best;
+  }
+
+  function planifierRappels() {
+    clearTimeout(minuteurRappel);
+    minuteurRappel = null;
+    if (!etat.rappels) return;
+    const next = prochaineEcheanceRappel();
+    if (!next) return;
+    minuteurRappel = setTimeout(() => {
+      const today = L.aujourdhui();
+      const prises = dosesAujourdhui(next.t.id, today).length;
+      const prevu = L.dosesPrévuesParJour(next.t.frequency, today);
+      if (prises < prevu) {
+        const corps = next.t.name + (next.t.dosage ? ' (' + next.t.dosage + ')' : '') + ' — ' + nomProfil(next.t.profileId);
+        if ('Notification' in window && Notification.permission === 'granted') {
+          try { new Notification('Rappel de prise — Omni-MediKit', { body: corps, tag: next.t.id }); } catch (e) {}
+        }
+        toast('Rappel de prise : ' + corps);
+      }
+      planifierRappels();
+    }, Math.max(1000, next.date.getTime() - Date.now()));
+  }
+
   async function init() {
+    await gererVerrouillage();
     await chargerDonnees();
     appliquerTheme(etat.theme);
     renderTout();
-    showVue('accueil');
+    const h = (location.hash || '').replace('#', '');
+    showVue(VUES.includes(h) ? h : 'accueil');
+    window.addEventListener('hashchange', () => {
+      const x = (location.hash || '').replace('#', '');
+      if (VUES.includes(x)) showVue(x);
+    });
     const v = $('#version-app');
     if (v) v.textContent = 'v' + VERSION_APP;
+    try {
+      const params = new URLSearchParams(location.search);
+      const textePartage = (params.get('text') || params.get('title') || '').trim();
+      if (textePartage) {
+        history.replaceState(null, '', location.pathname + location.hash);
+        if (etat.profiles.length) {
+          modalForm.removeAttribute('data-id');
+          modalForm.removeAttribute('data-created');
+          ouvrirModal('Nouveau traitement', formTraitementHTML({ name: textePartage.slice(0, 120), frequency: { type: 'quotidien' } }), enregistrerTraitement);
+          apresFormTraitement();
+          toast('Texte reçu : complétez le traitement.');
+        } else {
+          toast('Texte reçu — créez d’abord un profil pour l’utiliser.', true);
+        }
+      }
+    } catch (e) {}
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (miseAJourDemandee) location.reload();
       });
+      navigator.serviceWorker.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'fichier-json' && typeof e.data.texte === 'string') {
+          importerDepuisTexte(e.data.texte, e.data.name || 'partage.json');
+        }
+      });
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
-        .then(surveillerMisesAJour)
+        .then((inscription) => {
+          surveillerMisesAJour(inscription);
+          return navigator.serviceWorker.ready;
+        })
+        .then((inscription) => {
+          if (inscription && inscription.active) inscription.active.postMessage({ type: 'demander-fichier' });
+        })
         .catch((err) => console.warn('Service worker non enregistré :', err));
     }
   }

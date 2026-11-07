@@ -2,8 +2,14 @@
   'use strict';
 
   const DB_NOM = 'omni-medikit';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   const STORES = ['profiles', 'treatments', 'doses', 'vaccines', 'contacts', 'settings'];
+  const INDEXES = {
+    treatments: [['byProfile', 'profileId']],
+    doses: [['byProfile', 'profileId'], ['byTreatment', 'treatmentId'], ['byDate', 'date']],
+    vaccines: [['byProfile', 'profileId']],
+    contacts: [['byProfile', 'profileId']]
+  };
 
   let dbPromise = null;
 
@@ -13,8 +19,12 @@
       const req = indexedDB.open(DB_NOM, DB_VERSION);
       req.onupgradeneeded = () => {
         const db = req.result;
+        const tx = req.transaction;
         for (const nom of STORES) {
-          if (!db.objectStoreNames.contains(nom)) db.createObjectStore(nom, { keyPath: 'id' });
+          const s = db.objectStoreNames.contains(nom) ? tx.objectStore(nom) : db.createObjectStore(nom, { keyPath: 'id' });
+          for (const [indexNom, cle] of (INDEXES[nom] || [])) {
+            if (!s.indexNames.contains(indexNom)) s.createIndex(indexNom, cle, { unique: false });
+          }
         }
       };
       req.onsuccess = () => resolve(req.result);
@@ -78,18 +88,14 @@
 
     async function supprimerProfilCascade(id) {
     await supprimer('profiles', id);
-    for (const nom of ['treatments', 'vaccines', 'contacts']) {
-      const liste = await tout(nom);
-      for (const o of liste) if (o.profileId === id) await supprimer(nom, o.id);
+    for (const nom of ['treatments', 'vaccines', 'contacts', 'doses']) {
+      for (const o of await parIndex(nom, 'byProfile', id)) await supprimer(nom, o.id);
     }
-    const doses = await tout('doses');
-    for (const d of doses) if (d.profileId === id) await supprimer('doses', d.id);
   }
 
     async function supprimerTraitementCascade(id) {
     await supprimer('treatments', id);
-    const doses = await tout('doses');
-    for (const d of doses) if (d.treatmentId === id) await supprimer('doses', d.id);
+    for (const d of await parIndex('doses', 'byTreatment', id)) await supprimer('doses', d.id);
   }
 
   async function exporterTout() {

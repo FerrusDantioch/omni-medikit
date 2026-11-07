@@ -142,19 +142,54 @@ function border(canvas) {
     }
 }
 
+function encodeICO(images) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(images.length, 4);
+  let offset = 6 + 16 * images.length;
+  const parts = [header];
+  for (const im of images) {
+    const e = Buffer.alloc(16);
+    e.writeUInt8(im.size >= 256 ? 0 : im.size, 0);
+    e.writeUInt8(im.size >= 256 ? 0 : im.size, 1);
+    e.writeUInt8(0, 2);
+    e.writeUInt8(0, 3);
+    e.writeUInt16LE(1, 4);
+    e.writeUInt16LE(32, 6);
+    e.writeUInt32LE(im.png.length, 8);
+    e.writeUInt32LE(offset, 12);
+    parts.push(e);
+    offset += im.png.length;
+  }
+  for (const im of images) parts.push(im.png);
+  return Buffer.concat(parts);
+}
+
 fs.mkdirSync(OUT, { recursive: true });
 const S = 4;
+const generes = {};
 for (const [name, target, scale, full] of [
   ['icon-512.png', 512, 1, false],
+  ['icon-384.png', 384, 1, false],
   ['icon-192.png', 192, 1, false],
+  ['icon-48.png', 48, 1, false],
+  ['icon-32.png', 32, 1, false],
   ['icon-maskable-512.png', 512, 0.72, true],
 ]) {
   const c = draw(512 * S, scale, full);
   border(c);
   const img = c.downsample(512 * S / target);
-  fs.writeFileSync(path.join(OUT, name), encodePNG(img.width, img.height, img.data));
+  const png = encodePNG(img.width, img.height, img.data);
+  fs.writeFileSync(path.join(OUT, name), png);
+  generes[target] = png;
   console.log('écrit', name, img.width + 'x' + img.height);
 }
+fs.writeFileSync(path.join(OUT, 'favicon.ico'), encodeICO([
+  { size: 48, png: generes[48] },
+  { size: 32, png: generes[32] },
+]));
+console.log('écrit favicon.ico (48+32)');
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="112" fill="#14111d"/>

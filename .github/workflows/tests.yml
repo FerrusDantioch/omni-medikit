@@ -1,0 +1,45 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntaxe des fichiers JS
+        run: |
+          node --check js/logique.js
+          node --check js/db.js
+          node --check js/app.js
+          node --check sw.js
+          node --check tools/make-icons.js
+          node --check tools/test-logique.js
+          node --check tools/test-ui.js
+
+      - name: Manifeste valide
+        run: node -e "const m=require('./manifest.json'); if(m.name!=='Omni-MediKit'||m.short_name!=='Omni-MediKit') process.exit(1); if(!m.version) process.exit(1); console.log('manifest OK, version', m.version)"
+
+      - name: Tests unitaires (logique)
+        run: node tools/test-logique.js
+
+      - name: Test de rendu UI
+        run: node tools/test-ui.js
+
+      - name: Icônes à jour
+        run: |
+          node tools/make-icons.js
+          if ! git diff --exit-code -- icons/ > /dev/null; then
+            echo 'Les icônes ne sont pas à jour : régénérez-les avec "node tools/make-icons.js" et committez le résultat.'
+            exit 1
+          fi

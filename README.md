@@ -36,11 +36,24 @@ fonctionne sans aucune connexion.
   [omni-systeme](https://ferrusdantioch.github.io/omni-systeme/), couleur
   principale violet nuit), « sombre » et « clair ». Le choix est mémorisé
   localement et s'applique instantanément.
-- **Export / import JSON** : sauvegarde manuelle complète des données.
-- **Mise à jour manuelle** : un bandeau « Mettre à jour » apparaît quand une
-  nouvelle version a été téléchargée, et un bouton « Mettre à jour » dans les
-  réglages permet de chercher une mise à jour à tout moment. Rien ne change
-  sans que l'utilisateur touche le bouton ; les données restent telles quelles.
+- **Export / import JSON** : sauvegarde manuelle complète des données. L'import
+  valide chaque enregistrement avant de remplacer quoi que ce soit, et peut aussi
+  se faire en ouvrant un fichier `.json` directement depuis le gestionnaire de
+  fichiers de l'appareil (`file_handlers`). Un texte partagé vers l'application
+  (`share_target`) pré-remplit le formulaire « Nouveau traitement ».
+- **Mise à jour manuelle** : un bandeau « Mettre à jour » apparaît sur l'accueil
+  quand une nouvelle version a été téléchargée, et un bouton « Mettre à jour »
+  dans les réglages permet de chercher une mise à jour à tout moment. Rien ne
+  change sans que l'utilisateur touche le bouton ; les données restent telles
+  quelles.
+- **Rappels de prises** : heure de rappel facultative par traitement,
+  notifications (avec autorisation du navigateur) quand l'application est
+  ouverte ou en arrière-plan récent.
+- **Verrouillage optionnel** par code à 4 chiffres à l'ouverture de l'application.
+- **Recherche** dans les traitements et les contacts, **impression** de la vue
+  active (liste des traitements à montrer au médecin), **raccourcis** du
+  manifest (« Aujourd'hui », « Urgences »), navigation par ancre
+  (`./#urgences`, etc.).
 
 ## Technique
 
@@ -49,7 +62,11 @@ fonctionne sans aucune connexion.
 - `manifest.json` + service worker enregistré, stratégie **offline-first**
   (pré-cache de la coquille applicative, puis cache à la première utilisation).
 - Persistance : **IndexedDB** (profils, traitements, prises, vaccins, contacts,
-  réglages dont le thème), dates gérées en local.
+  réglages dont le thème), avec index (`byProfile`, `byTreatment`, `byDate`),
+  dates gérées en local.
+- **CI** : `.github/workflows/tests.yml` vérifie à chaque push la syntaxe JS,
+  le manifeste, les tests unitaires (`tools/test-logique.js`), le test de rendu
+  (`tools/test-ui.js`) et la fraîcheur des icônes.
 - Thèmes implémentés par **variables CSS** (`data-theme` sur `<html>`).
 - **Versionnement** : la version figure dans le champ `version` de
   `manifest.json`, dans la constante `VERSION` de `sw.js` (nom du cache

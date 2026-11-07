@@ -189,7 +189,7 @@ form { display: grid; gap: 14px; }
 .champ .aide { color: var(--discret); font-size: .85rem; }
 .champ .erreur { color: var(--danger); font-size: .9rem; font-weight: 600; }
 input[type="text"], input[type="date"], input[type="time"], input[type="number"],
-input[type="tel"], input[type="url"], select, textarea {
+input[type="tel"], input[type="url"], input[type="search"], select, textarea {
   font: 400 1rem var(--f-texte); color: var(--texte);
   background: var(--fond); border: 1px solid var(--trait); border-radius: 10px;
   padding: 12px 14px; min-height: 48px; width: 100%;
@@ -269,4 +269,36 @@ footer.pied { border-top: 1px solid var(--trait); padding-block: 32px 48px; colo
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   body { transition: none; }
+}
+
+/* Écran de verrouillage */
+#verrou {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--fond);
+  display: grid; place-items: center; padding: 16px;
+}
+.verrou-carte {
+  background: var(--surface); border: 1px solid var(--trait); border-top: 4px solid var(--primaire);
+  border-radius: 6px 6px 14px 14px; padding: 28px;
+  display: grid; gap: 14px; max-width: 380px; width: 100%; justify-items: center; text-align: center;
+}
+.verrou-carte img { border-radius: 10px; }
+.verrou-carte .champ { width: 100%; text-align: left; }
+.verrou-carte .bouton { width: 100%; }
+
+/* Impression : uniquement la vue active, lisible en noir sur blanc (liste pour le médecin) */
+@media print {
+  .entete, #toast, dialog, #bandeau-mise-a-jour, .selecteurs, .modes,
+  .bouton, .petit-bouton, .actions, #verrou { display: none !important; }
+  body { background: #fff; color: #000; font-size: 12pt; }
+  .page { max-width: none; padding: 0; }
+  section.vue { padding-block: 0; border: 0; }
+  .intro-section p, .meta, .detail, .vide { color: #000; }
+  .carte, .ligne-carte, .panel-profil, .encart, .reglage, .urgence-carte {
+    background: #fff; color: #000; border: 1px solid #000; border-radius: 0; padding: 10px 14px;
+  }
+  .statut { border-color: #000; color: #000; }
+  a { color: #000; text-decoration: none; }
+  h2 { font-size: 18pt; }
+  .med { border: 1px solid #000; }
 }

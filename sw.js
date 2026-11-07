@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = '1.0.1';
+const VERSION = '1.1.0';
 const CACHE = 'omni-medikit-' + VERSION;
 const PREFIX = 'omni-medikit-';
 const COQUILLE = [
@@ -12,7 +12,9 @@ const COQUILLE = [
   'js/logique.js',
   'js/app.js',
   'icons/icon.svg',
+  'icons/favicon.ico',
   'icons/icon-192.png',
+  'icons/icon-384.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png'
 ];
@@ -37,6 +39,41 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'activer') self.skipWaiting();
+  if (event.data && event.data.type === 'demander-fichier' && fichierEnAttente && event.source) {
+    event.source.postMessage({ type: 'fichier-json', name: fichierEnAttente.name, texte: fichierEnAttente.texte });
+    fichierEnAttente = null;
+  }
+});
+
+let fichierEnAttente = null;
+
+if ('launchQueue' in self) {
+  self.launchQueue.setConsumer((params) => {
+    if (!params.files || !params.files.length) return;
+    const handle = params.files[0];
+    handle.getFile()
+      .then((file) => file.text())
+      .then((texte) => {
+        fichierEnAttente = { name: handle.name || 'import.json', texte: texte };
+        return self.clients.matchAll({ type: 'window' });
+      })
+      .then((clients) => {
+        for (const client of clients) {
+          client.postMessage({ type: 'fichier-json', name: fichierEnAttente.name, texte: fichierEnAttente.texte });
+        }
+      })
+      .catch(() => {});
+  });
+}
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      if (clients.length > 0) return clients[0].focus();
+      return self.clients.openWindow('./');
+    })
+  );
 });
 
 self.addEventListener('fetch', (event) => {

@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#a777ff">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon.ico" sizes="32x32 48x48">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,6 +20,20 @@
   <script>try{var t=localStorage.getItem('omni-medikit-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
 </head>
 <body>
+  <div id="verrou" hidden>
+    <div class="verrou-carte">
+      <img src="icons/icon.svg" alt="" width="48" height="48">
+      <h2>Omni-MediKit est verrouillé</h2>
+      <p>Entrez le code pour ouvrir l'application sur cet appareil.</p>
+      <div class="champ">
+        <span>Code</span>
+        <input type="password" id="verrou-code" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off">
+        <span class="erreur" id="verrou-erreur"></span>
+      </div>
+      <button type="button" class="bouton" id="verrou-ok">Déverrouiller</button>
+    </div>
+  </div>
+
   <header class="entete">
     <div class="entete-in">
       <a class="marque" href="#" id="marque" aria-label="Omni-MediKit, retour à l'accueil">
@@ -88,7 +103,12 @@
           <span id="label-filtre-traitements">Afficher</span>
           <select id="filtre-traitements" aria-labelledby="label-filtre-traitements"></select>
         </div>
+        <div class="champ">
+          <span id="label-recherche-traitements">Recherche</span>
+          <input type="search" id="recherche-traitements" placeholder="Nom du médicament…" aria-labelledby="label-recherche-traitements">
+        </div>
         <button type="button" class="bouton" id="btn-ajout-traitement">+ Nouveau traitement</button>
+        <button type="button" class="petit-bouton" data-action="imprimer">Imprimer</button>
       </div>
       <div id="liste-traitements" class="liste"></div>
     </section>
@@ -120,7 +140,12 @@
           <span id="label-filtre-contacts">Afficher</span>
           <select id="filtre-contacts" aria-labelledby="label-filtre-contacts"></select>
         </div>
+        <div class="champ">
+          <span id="label-recherche-contacts">Recherche</span>
+          <input type="search" id="recherche-contacts" placeholder="Nom, spécialité…" aria-labelledby="label-recherche-contacts">
+        </div>
         <button type="button" class="bouton" id="btn-ajout-contact">+ Nouveau contact</button>
+        <button type="button" class="petit-bouton" data-action="imprimer">Imprimer</button>
       </div>
       <div id="liste-contacts" class="liste"></div>
     </section>
@@ -186,6 +211,25 @@
           <input type="file" id="input-import" accept="application/json,.json" hidden>
         </div>
         <p class="aide" id="info-donnees"></p>
+      </div>
+
+      <div class="reglage">
+        <h3>Rappels de prises</h3>
+        <p>Activez les rappels pour recevoir une notification à l'heure de rappel de chaque traitement (champ « Heure de rappel » du formulaire). L'autorisation du navigateur est demandée à l'activation ; les rappels fonctionnent quand l'application est ouverte ou récemment en arrière-plan.</p>
+        <div class="checks">
+          <label><input type="checkbox" id="opt-rappels"> Activer les rappels de prises (notifications)</label>
+        </div>
+        <p class="aide" id="info-rappels"></p>
+      </div>
+
+      <div class="reglage">
+        <h3>Verrouillage</h3>
+        <p>Optionnel : protégez l'ouverture d'Omni-MediKit sur cet appareil par un code à 4 chiffres. Les données restent stockées localement ; le code bloque seulement l'accès à l'application.</p>
+        <div class="ligne">
+          <button type="button" class="bouton secondaire" id="btn-verrou">Activer le verrouillage</button>
+          <button type="button" class="bouton danger" id="btn-desactiver-verrou" hidden>Désactiver le verrouillage</button>
+        </div>
+        <p class="aide" id="info-verrou">Verrouillage inactif.</p>
       </div>
 
       <div class="reglage" id="a-propos">
