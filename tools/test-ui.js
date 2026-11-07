@@ -146,8 +146,12 @@ const DB = require(path.join(ROOT, 'js/db.js'));
   ok(sectionEls.find((s) => s.id === 'vue-accueil').hidden === false, 'vue accueil visible');
   ok($('toast') !== undefined, 'toast présent');
   ok($('bandeau-mise-a-jour').hidden === true, 'bandeau mise à jour caché sans nouvelle version');
-  ok($('version-app').textContent === 'v1.0.0', 'version affichée: ' + $('version-app').textContent);
+  ok($('version-app').textContent === 'v1.0.1', 'version affichée: ' + $('version-app').textContent);
   ok(html.includes('btn-mise-a-jour') && html.includes('btn-verifier-maj'), 'boutons « Mettre à jour » présents (bandeau + réglages)');
+  const posAccueil = html.indexOf('id="vue-accueil"');
+  const posBandeau = html.indexOf('id="bandeau-mise-a-jour"');
+  const posFinAccueil = html.indexOf('id="vue-traitements"');
+  ok(posAccueil !== -1 && posBandeau > posAccueil && posBandeau < posFinAccueil, 'bandeau « Mettre à jour » placé dans la vue Accueil uniquement');
 
   if (echecs) { console.error('\n' + echecs + ' échec(s)'); process.exit(1); }
   console.log('\nTest UI (rendu complet avec données) : tous les contrôles passent.');

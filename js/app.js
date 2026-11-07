@@ -874,7 +874,7 @@
     e.target.value = '';
   });
 
-  const VERSION_APP = '1.0.0';
+  const VERSION_APP = '1.0.1';
   let inscriptionSw = null;
   let miseAJourDemandee = false;
 
