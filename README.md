@@ -37,6 +37,10 @@ fonctionne sans aucune connexion.
   principale violet nuit), « sombre » et « clair ». Le choix est mémorisé
   localement et s'applique instantanément.
 - **Export / import JSON** : sauvegarde manuelle complète des données.
+- **Mise à jour manuelle** : un bandeau « Mettre à jour » apparaît quand une
+  nouvelle version a été téléchargée, et un bouton « Mettre à jour » dans les
+  réglages permet de chercher une mise à jour à tout moment. Rien ne change
+  sans que l'utilisateur touche le bouton ; les données restent telles quelles.
 
 ## Technique
 
@@ -47,6 +51,10 @@ fonctionne sans aucune connexion.
 - Persistance : **IndexedDB** (profils, traitements, prises, vaccins, contacts,
   réglages dont le thème), dates gérées en local.
 - Thèmes implémentés par **variables CSS** (`data-theme` sur `<html>`).
+- **Versionnement** : la version figure dans le champ `version` de
+  `manifest.json`, dans la constante `VERSION` de `sw.js` (nom du cache
+  `omni-medikit-<version>`) et dans `VERSION_APP` de `js/app.js` — à incrémenter
+  à chaque publication pour que le bouton « Mettre à jour » fonctionne.
 
 ## Fichiers
 

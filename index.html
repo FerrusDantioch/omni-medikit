@@ -39,6 +39,13 @@
 
   <main class="page">
 
+    <div id="bandeau-mise-a-jour" class="encart" role="status" hidden>
+      <p><strong>Une nouvelle version d'Omni-MediKit est prête.</strong> Vos données restent telles quelles.</p>
+      <div class="ligne">
+        <button type="button" id="btn-mise-a-jour" class="bouton">Mettre à jour</button>
+      </div>
+    </div>
+
     <section class="vue" id="vue-accueil" aria-labelledby="titre-accueil">
       <div class="accueil-tete">
         <div class="intro-section">
@@ -149,6 +156,16 @@
       <div class="intro-section">
         <p class="etiquette">Préférences</p>
         <h2 id="titre-reglages">Réglages</h2>
+      </div>
+
+      <div class="reglage">
+        <h3>Mise à jour</h3>
+        <p>Omni-MediKit fonctionne hors ligne grâce à une copie enregistrée sur l'appareil. Touchez « Mettre à jour » pour chercher une nouvelle version et l'appliquer tout de suite — vos données restent telles quelles, rien ne change sans votre accord.</p>
+        <div class="ligne">
+          <button type="button" class="bouton" id="btn-verifier-maj">Mettre à jour</button>
+          <span class="aide" id="info-maj"></span>
+        </div>
+        <p class="aide">Version actuelle : <span class="mono" id="version-app"></span></p>
       </div>
 
       <div class="reglage">

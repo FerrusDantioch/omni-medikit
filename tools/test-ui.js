@@ -84,7 +84,17 @@ globalThis.document = {
   }
 };
 globalThis.localStorage = { _m: {}, getItem(k) { return this._m[k] || null; }, setItem(k, v) { this._m[k] = String(v); } };
-Object.defineProperty(globalThis, 'navigator', { value: { serviceWorker: { register: () => Promise.resolve() } }, configurable: true });
+const swRegStub = { addEventListener() {}, update: () => Promise.resolve(), waiting: null, installing: null };
+Object.defineProperty(globalThis, 'navigator', {
+  value: {
+    serviceWorker: {
+      controller: null,
+      addEventListener() {},
+      register: () => Promise.resolve(swRegStub)
+    }
+  },
+  configurable: true
+});
 globalThis.scrollTo = () => {};
 window.scrollTo = () => {};
 
@@ -135,6 +145,9 @@ const DB = require(path.join(ROOT, 'js/db.js'));
   ok($('panels').hidden === true && $('panels-duo').hidden === false, 'bascule solo/duo cohérente');
   ok(sectionEls.find((s) => s.id === 'vue-accueil').hidden === false, 'vue accueil visible');
   ok($('toast') !== undefined, 'toast présent');
+  ok($('bandeau-mise-a-jour').hidden === true, 'bandeau mise à jour caché sans nouvelle version');
+  ok($('version-app').textContent === 'v1.0.0', 'version affichée: ' + $('version-app').textContent);
+  ok(html.includes('btn-mise-a-jour') && html.includes('btn-verifier-maj'), 'boutons « Mettre à jour » présents (bandeau + réglages)');
 
   if (echecs) { console.error('\n' + echecs + ' échec(s)'); process.exit(1); }
   console.log('\nTest UI (rendu complet avec données) : tous les contrôles passent.');

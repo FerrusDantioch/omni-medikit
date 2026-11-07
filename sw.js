@@ -1,6 +1,8 @@
 'use strict';
 
-const VERSION = 'omni-medikit-v1';
+const VERSION = '1.0.0';
+const CACHE = 'omni-medikit-' + VERSION;
+const PREFIX = 'omni-medikit-';
 const COQUILLE = [
   './',
   'index.html',
@@ -17,18 +19,24 @@ const COQUILLE = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(VERSION)
-      .then((cache) => cache.addAll(COQUILLE))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) =>
+      cache.addAll(COQUILLE.map((f) => new Request(f, { cache: 'reload' })))
+    )
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((cles) => Promise.all(cles.filter((c) => c !== VERSION).map((c) => caches.delete(c))))
+      .then((cles) => Promise.all(
+        cles.filter((c) => c.startsWith(PREFIX) && c !== CACHE).map((c) => caches.delete(c))
+      ))
       .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'activer') self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -39,7 +47,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match('index.html').then((hit) => hit || fetch(req).then((rep) => {
         const copie = rep.clone();
-        caches.open(VERSION).then((cache) => cache.put('index.html', copie));
+        caches.open(CACHE).then((cache) => cache.put('index.html', copie));
         return rep;
       }).catch(() => caches.match('index.html')))
     );
@@ -54,7 +62,7 @@ self.addEventListener('fetch', (event) => {
             req.url.startsWith('https://fonts.googleapis.com') ||
             req.url.startsWith('https://fonts.gstatic.com'))) {
           const copie = rep.clone();
-          caches.open(VERSION).then((cache) => cache.put(req, copie));
+          caches.open(CACHE).then((cache) => cache.put(req, copie));
         }
         return rep;
       }).catch(() => caches.match(req));

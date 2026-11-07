@@ -874,13 +874,80 @@
     e.target.value = '';
   });
 
+  const VERSION_APP = '1.0.0';
+  let inscriptionSw = null;
+  let miseAJourDemandee = false;
+
+  function montrerMiseAJour() {
+    const prete = !!(inscriptionSw && inscriptionSw.waiting && navigator.serviceWorker.controller);
+    const bandeau = $('#bandeau-mise-a-jour');
+    if (bandeau) bandeau.hidden = !prete;
+  }
+
+  function surveillerMisesAJour(inscription) {
+    inscriptionSw = inscription;
+    montrerMiseAJour();
+    inscription.addEventListener('updatefound', () => {
+      const nouveau = inscription.installing;
+      if (!nouveau) return;
+      nouveau.addEventListener('statechange', () => {
+        if (nouveau.state === 'installed') montrerMiseAJour();
+      });
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && inscriptionSw) {
+        inscriptionSw.update().catch(() => {});
+      }
+    });
+  }
+
+  async function appliquerMiseAJour(bouton) {
+    if (!inscriptionSw) { toast('Le mode hors ligne n’est pas disponible sur ce navigateur.', true); return; }
+    if (inscriptionSw.waiting) {
+      miseAJourDemandee = true;
+      if (bouton) { bouton.disabled = true; bouton.textContent = 'Mise à jour…'; }
+      inscriptionSw.waiting.postMessage({ type: 'activer' });
+      return;
+    }
+    if (bouton) bouton.disabled = true;
+    const info = $('#info-maj');
+    if (info) info.textContent = 'Recherche de mises à jour…';
+    try {
+      await inscriptionSw.update();
+      await new Promise((r) => setTimeout(r, 500));
+    } catch (e) {
+      if (info) info.textContent = '';
+      if (bouton) bouton.disabled = false;
+      toast('Hors ligne : impossible de vérifier les mises à jour pour l’instant.', true);
+      return;
+    }
+    if (inscriptionSw.waiting) {
+      montrerMiseAJour();
+      await appliquerMiseAJour(bouton);
+      return;
+    }
+    if (info) info.textContent = 'Vous utilisez déjà la dernière version (v' + VERSION_APP + ').';
+    toast('Omni-MediKit est à jour (v' + VERSION_APP + ').');
+    if (bouton) bouton.disabled = false;
+  }
+
+  $('#btn-mise-a-jour').addEventListener('click', (e) => appliquerMiseAJour(e.currentTarget));
+  $('#btn-verifier-maj').addEventListener('click', (e) => appliquerMiseAJour(e.currentTarget));
+
   async function init() {
     await chargerDonnees();
     appliquerTheme(etat.theme);
     renderTout();
     showVue('accueil');
+    const v = $('#version-app');
+    if (v) v.textContent = 'v' + VERSION_APP;
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service worker non enregistré :', err));
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (miseAJourDemandee) location.reload();
+      });
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+        .then(surveillerMisesAJour)
+        .catch((err) => console.warn('Service worker non enregistré :', err));
     }
   }
 
