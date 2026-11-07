@@ -5,7 +5,7 @@
   const DB = window.DB;
 
   const URGENCES = [
-    { nom: 'SAMU', num: '15', desc: 'Urgences médicales, anywhere en France.' , liens: [{ label: 'Appeler le 15', href: 'tel:15' }] },
+    { nom: 'SAMU', num: '15', desc: 'Urgences médicales, dans toute la France.', liens: [{ label: 'Appeler le 15', href: 'tel:15' }] },
     { nom: 'Police secours', num: '17', desc: 'Danger immédiat pour les personnes ou les biens.', liens: [{ label: 'Appeler le 17', href: 'tel:17' }] },
     { nom: 'Pompiers', num: '18', desc: 'Incendie, accident, secours à personne.', liens: [{ label: 'Appeler le 18', href: 'tel:18' }] },
     { nom: 'Numéro d’urgence européen', num: '112', desc: 'Depuis un mobile, en France comme dans toute l’UE.', liens: [{ label: 'Appeler le 112', href: 'tel:112' }] },

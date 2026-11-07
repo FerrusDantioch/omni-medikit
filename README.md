@@ -31,8 +31,8 @@ fonctionne sans aucune connexion.
   Pompiers 18, 112 européen, 114 sourds et malentendants, centre antipoison) avec
   appel direct en un clic via les liens `tel:`, et contact d'urgence configurable
   par personne (appel direct ou SMS pré-rédigé modifiable, via `tel:` / `sms:`).
-- **Thèmes** : trois thèmes sélectionnables dans les réglages — « charte
-  graphique » (par défaut, inspirée du portfolio
+- **Thèmes** : trois thèmes sélectionnables dans les réglages — « thème
+  omni-systeme » (par défaut, inspiré du portfolio
   [omni-systeme](https://ferrusdantioch.github.io/omni-systeme/), couleur
   principale violet nuit), « sombre » et « clair ». Le choix est mémorisé
   localement et s'applique instantanément.
