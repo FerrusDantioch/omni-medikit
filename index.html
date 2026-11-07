@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="charte">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Omni-MediKit</title>
+  <meta name="description" content="Omni-MediKit — suivi de traitements médicaux familial, PWA 100 % hors ligne. Toutes les données restent sur l'appareil.">
+  <meta name="theme-color" content="#a777ff">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Omni-MediKit">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;700;800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script>try{var t=localStorage.getItem('omni-medikit-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+</head>
+<body>
+  <header class="entete">
+    <div class="entete-in">
+      <a class="marque" href="#" id="marque" aria-label="Omni-MediKit, retour à l'accueil">
+        <img src="icons/icon.svg" alt="" width="34" height="34">
+        OMNI-MEDIKIT
+      </a>
+      <nav class="nav" aria-label="Sections de l'application">
+        <button type="button" data-vue="accueil" aria-current="page">Accueil</button>
+        <button type="button" data-vue="traitements">Traitements</button>
+        <button type="button" data-vue="vaccins">Vaccins</button>
+        <button type="button" data-vue="contacts">Contacts</button>
+        <button type="button" data-vue="urgences">Urgences</button>
+        <button type="button" data-vue="profils">Profils</button>
+        <button type="button" data-vue="reglages">Réglages</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <section class="vue" id="vue-accueil" aria-labelledby="titre-accueil">
+      <div class="accueil-tete">
+        <div class="intro-section">
+          <p class="etiquette">Suivi du jour</p>
+          <h2 id="titre-accueil">Aujourd'hui</h2>
+          <p class="date" id="date-du-jour"></p>
+        </div>
+        <div class="selecteurs">
+          <div class="champ">
+            <span id="label-profil-actif">Personne suivie</span>
+            <select id="sel-profil" aria-labelledby="label-profil-actif"></select>
+          </div>
+          <div class="modes" role="group" aria-label="Mode d'affichage">
+            <button type="button" id="mode-solo" aria-pressed="true">Solo</button>
+            <button type="button" id="mode-duo" aria-pressed="false">Duo</button>
+          </div>
+        </div>
+        <div class="selecteurs" id="selecteurs-duo" hidden>
+          <div class="champ">
+            <span id="label-duo-a">Première personne</span>
+            <select id="sel-duo-a" aria-labelledby="label-duo-a"></select>
+          </div>
+          <div class="champ">
+            <span id="label-duo-b">Deuxième personne</span>
+            <select id="sel-duo-b" aria-labelledby="label-duo-b"></select>
+          </div>
+        </div>
+      </div>
+      <div id="panels" class="liste"></div>
+      <div id="panels-duo" class="duo" hidden></div>
+    </section>
+
+    <section class="vue" id="vue-traitements" aria-labelledby="titre-traitements" hidden>
+      <div class="intro-section">
+        <p class="etiquette">Médicaments</p>
+        <h2 id="titre-traitements">Traitements</h2>
+        <p>Gérez les traitements de chaque personne : programmation, prises du jour et historique.</p>
+      </div>
+      <div class="selecteurs" style="margin-bottom:20px">
+        <div class="champ">
+          <span id="label-filtre-traitements">Afficher</span>
+          <select id="filtre-traitements" aria-labelledby="label-filtre-traitements"></select>
+        </div>
+        <button type="button" class="bouton" id="btn-ajout-traitement">+ Nouveau traitement</button>
+      </div>
+      <div id="liste-traitements" class="liste"></div>
+    </section>
+
+    <section class="vue" id="vue-vaccins" aria-labelledby="titre-vaccins" hidden>
+      <div class="intro-section">
+        <p class="etiquette">Carnet de vaccination</p>
+        <h2 id="titre-vaccins">Vaccins</h2>
+        <p>Dernière injection et prochain rappel, par personne.</p>
+      </div>
+      <div class="selecteurs" style="margin-bottom:20px">
+        <div class="champ">
+          <span id="label-filtre-vaccins">Afficher</span>
+          <select id="filtre-vaccins" aria-labelledby="label-filtre-vaccins"></select>
+        </div>
+        <button type="button" class="bouton" id="btn-ajout-vaccin">+ Nouveau vaccin</button>
+      </div>
+      <div id="liste-vaccins" class="liste"></div>
+    </section>
+
+    <section class="vue" id="vue-contacts" aria-labelledby="titre-contacts" hidden>
+      <div class="intro-section">
+        <p class="etiquette">Annuaire médical</p>
+        <h2 id="titre-contacts">Contacts médicaux</h2>
+        <p>Médecins et professionnels de santé, globaux ou par personne.</p>
+      </div>
+      <div class="selecteurs" style="margin-bottom:20px">
+        <div class="champ">
+          <span id="label-filtre-contacts">Afficher</span>
+          <select id="filtre-contacts" aria-labelledby="label-filtre-contacts"></select>
+        </div>
+        <button type="button" class="bouton" id="btn-ajout-contact">+ Nouveau contact</button>
+      </div>
+      <div id="liste-contacts" class="liste"></div>
+    </section>
+
+    <section class="vue" id="vue-urgences" aria-labelledby="titre-urgences" hidden>
+      <div class="intro-section">
+        <p class="etiquette">En cas d'urgence</p>
+        <h2 id="titre-urgences">Urgences</h2>
+        <p>Numéros d'urgence français, appel direct en un clic. Aucun service tiers : les liens <span class="mono">tel:</span> et <span class="mono">sms:</span> ouvrent l'application native de l'appareil.</p>
+      </div>
+      <div class="urgences" id="liste-urgences"></div>
+      <div class="reglage" style="margin-top:24px">
+        <h3>Contact d'urgence par personne</h3>
+        <p>Configurez-le dans l'onglet <strong>Profils</strong> : appel direct ou SMS pré-rédigé (modifiable).</p>
+        <div id="contacts-urgence" class="liste"></div>
+      </div>
+    </section>
+
+    <section class="vue" id="vue-profils" aria-labelledby="titre-profils" hidden>
+      <div class="intro-section">
+        <p class="etiquette">Famille</p>
+        <h2 id="titre-profils">Profils</h2>
+        <p>Plusieurs personnes suivies dans la même application. Les données restent locales, sur cet appareil.</p>
+      </div>
+      <div class="selecteurs" style="margin-bottom:20px">
+        <button type="button" class="bouton" id="btn-ajout-profil">+ Nouveau profil</button>
+      </div>
+      <div id="liste-profils" class="cartes"></div>
+    </section>
+
+    <section class="vue" id="vue-reglages" aria-labelledby="titre-reglages" hidden>
+      <div class="intro-section">
+        <p class="etiquette">Préférences</p>
+        <h2 id="titre-reglages">Réglages</h2>
+      </div>
+
+      <div class="reglage">
+        <h3>Apparence</h3>
+        <p>Choisissez le thème de l'application. Le choix est mémorisé localement et s'applique immédiatement, sans recharger.</p>
+        <div class="modes" role="group" aria-label="Thème de l'application" id="choix-theme">
+          <button type="button" data-theme="charte" aria-pressed="true">Charte graphique</button>
+          <button type="button" data-theme="sombre" aria-pressed="false">Sombre</button>
+          <button type="button" data-theme="clair" aria-pressed="false">Clair</button>
+        </div>
+      </div>
+
+      <div class="reglage">
+        <h3>Données</h3>
+        <p>Toutes les données (profils, traitements, prises, vaccins, contacts, réglages) sont stockées uniquement sur cet appareil, dans IndexedDB. Exportez-les en JSON pour une sauvegarde manuelle, ou réimportez une sauvegarde.</p>
+        <div class="ligne">
+          <button type="button" class="bouton" id="btn-exporter">Exporter en JSON</button>
+          <label class="bouton secondaire" for="input-import" style="cursor:pointer">Importer un JSON…</label>
+          <input type="file" id="input-import" accept="application/json,.json" hidden>
+        </div>
+        <p class="aide" id="info-donnees"></p>
+      </div>
+
+      <div class="reglage" id="a-propos">
+        <h3>À propos d'Omni-MediKit</h3>
+        <p><strong>Omni-MediKit</strong> est une application de suivi de traitement médical, PWA fonctionnant à 100&nbsp;% hors ligne et installable sur tablette et smartphone. Aucun backend, aucun serveur : toutes les données restent localement sur l'appareil.</p>
+        <div class="ia">
+          <p class="etiquette">Création et intelligence artificielle</p>
+          <p>Omni-MediKit a été développée par <strong>Ferrus Dantioch</strong> avec l'aide de l'intelligence artificielle.</p>
+        </div>
+        <p>Découvrir mes autres projets : <a href="https://ferrusdantioch.github.io/omni-systeme/" target="_blank" rel="noopener">le portfolio omni-systeme (ferrusdantioch.github.io/omni-systeme)</a> · <a href="https://github.com/FerrusDantioch/omni-systeme" target="_blank" rel="noopener">dépôt GitHub omni-systeme</a>.</p>
+        <p>Code sous licence <strong>Creative Commons BY-NC-ND 4.0</strong> (© 2026 Ferrus Dantioch) — voir le fichier <span class="mono">LICENSE</span> du dépôt <a href="https://github.com/FerrusDantioch/omni-medikit" target="_blank" rel="noopener">omni-medikit</a>.</p>
+        <p class="aide">Avertissement : Omni-MediKit est un outil de suivi personnel, pas un dispositif médical. En cas d'urgence, appelez le 15, le 18 ou le 112.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="pied">
+    <p><strong>Omni-MediKit</strong> — suivi de traitement médical hors ligne. Données 100&nbsp;% locales.</p>
+    <p>Développée par Ferrus Dantioch avec l'aide de l'IA · <a href="https://ferrusdantioch.github.io/omni-systeme/" target="_blank" rel="noopener">Portfolio omni-systeme</a> · Licence CC BY-NC-ND 4.0</p>
+  </footer>
+
+  <dialog id="modal" aria-labelledby="modal-titre">
+    <form method="dialog" class="modal-in" id="modal-form" novalidate>
+      <h3 id="modal-titre"></h3>
+      <div id="modal-corps" style="display:grid;gap:14px"></div>
+      <div class="modal-pied">
+        <button type="button" class="bouton secondaire" id="modal-annuler">Annuler</button>
+        <button type="submit" class="bouton" id="modal-valider">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/logique.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

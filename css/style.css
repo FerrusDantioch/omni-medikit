@@ -1,0 +1,272 @@
+/* Omni-MediKit — styles et thèmes.
+   Trois thèmes définis par variables CSS sur <html data-theme="..."> :
+   - "charte" (défaut) : charte graphique du portfolio omni-systeme, violet nuit ;
+   - "sombre" : sombre neutre très contrasté ;
+   - "clair"  : clair. */
+
+:root,
+:root[data-theme="charte"] {
+  --fond: #14111d;          /* fond, encre violette très sombre */
+  --surface: #1d1929;       /* surfaces (cartes) */
+  --trait: #332c47;         /* filets et bordures */
+  --texte: #e9e4f2;         /* texte principal */
+  --discret: #a59cbb;       /* texte secondaire */
+  --primaire: #a777ff;      /* violet nuit, couleur principale */
+  --primaire-texte: #140d24;/* texte sur fond primaire */
+  --halo: #d6c2ff;          /* lueur, liens, focus */
+  --succes: #8fd6a4;
+  --avert: #c9a24a;
+  --danger: #c2412f;
+  --f-titre: "Oxanium", "Trebuchet MS", system-ui, sans-serif;
+  --f-texte: "Literata", Georgia, "Times New Roman", serif;
+  --f-des: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+:root[data-theme="sombre"] {
+  --fond: #0a0a10;
+  --surface: #15151d;
+  --trait: #2c2c3a;
+  --texte: #f3f1f8;
+  --discret: #a5a2b6;
+  --primaire: #b79bff;
+  --primaire-texte: #140d24;
+  --halo: #d6c2ff;
+  --succes: #8fd6a4;
+  --avert: #d9b45c;
+  --danger: #e0563f;
+  --f-titre: "Oxanium", "Trebuchet MS", system-ui, sans-serif;
+  --f-texte: "Literata", Georgia, "Times New Roman", serif;
+  --f-des: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+:root[data-theme="clair"] {
+  --fond: #f6f4fb;
+  --surface: #ffffff;
+  --trait: #ddd7ea;
+  --texte: #1d1929;
+  --discret: #5d566e;
+  --primaire: #6a3fd4;
+  --primaire-texte: #ffffff;
+  --halo: #4a2ea0;
+  --succes: #1e7d46;
+  --avert: #8a6a1f;
+  --danger: #b3261e;
+  --f-titre: "Oxanium", "Trebuchet MS", system-ui, sans-serif;
+  --f-texte: "Literata", Georgia, "Times New Roman", serif;
+  --f-des: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: var(--f-texte);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  transition: background-color .2s ease, color .2s ease;
+}
+a { color: var(--halo); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, summary:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--halo);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+h1, h2, h3 { font-family: var(--f-titre); text-wrap: balance; line-height: 1.15; margin: 0; }
+h2 { font-size: clamp(1.6rem, 4.5vw, 2.2rem); font-weight: 700; }
+h3 { font-size: 1.25rem; font-weight: 700; }
+p { margin: 0; }
+.etiquette {
+  font-family: var(--f-titre); font-size: .78rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--discret);
+}
+.mono { font-family: var(--f-des); }
+
+/* En-tête */
+.entete {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+  background: color-mix(in srgb, var(--fond) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--trait);
+}
+.entete-in {
+  max-width: 1080px; margin: 0 auto; padding: 10px 16px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.marque {
+  display: flex; align-items: center; gap: 10px; text-decoration: none;
+  color: var(--texte); font-family: var(--f-titre); font-weight: 800; letter-spacing: .04em;
+}
+.marque img { width: 34px; height: 34px; border-radius: 8px; display: block; }
+.nav { display: flex; gap: 4px 8px; flex-wrap: wrap; margin-left: auto; font-family: var(--f-titre); font-size: .9rem; }
+.nav button {
+  color: var(--discret); background: none; border: 0; border-radius: 8px;
+  padding: 8px 10px; cursor: pointer; font: inherit; min-height: 44px;
+}
+.nav button:hover { color: var(--texte); }
+.nav button[aria-current="page"] { background: var(--primaire); color: var(--primaire-texte); font-weight: 700; }
+
+.page { max-width: 1080px; margin: 0 auto; padding-inline: 16px; }
+section.vue { padding-block: 40px 64px; }
+section.vue[hidden] { display: none; }
+.intro-section { display: grid; gap: 12px; margin-bottom: 32px; max-width: 65ch; }
+.intro-section p { color: var(--discret); }
+
+/* Boutons (charte : .bouton primaire violet, .petit-bouton sobre) */
+.bouton {
+  font: 700 1rem var(--f-titre); letter-spacing: .04em;
+  background: var(--primaire); color: var(--primaire-texte);
+  border: 0; border-radius: 10px; padding: 12px 22px; cursor: pointer;
+  min-height: 48px;
+}
+.bouton:hover { background: var(--halo); }
+.bouton.secondaire {
+  background: none; color: var(--halo); border: 1px solid var(--trait);
+  font-weight: 600; font-size: .95rem;
+}
+.bouton.secondaire:hover { border-color: var(--primaire); background: none; }
+.bouton.danger { background: none; color: var(--danger); border: 1px solid var(--danger); font-weight: 600; font-size: .95rem; }
+.bouton.danger:hover { background: var(--danger); color: #fff; }
+.petit-bouton {
+  font: 600 .85rem var(--f-titre); background: none; color: var(--halo);
+  border: 1px solid var(--trait); border-radius: 8px; padding: 7px 12px;
+  cursor: pointer; text-decoration: none; display: inline-block; min-height: 40px;
+}
+.petit-bouton:hover { border-color: var(--primaire); }
+.petit-bouton.pris { color: var(--succes); border-color: var(--succes); }
+.petit-bouton.urgence { color: var(--danger); border-color: var(--danger); font-weight: 700; }
+.petit-bouton.urgence:hover { background: var(--danger); color: #fff; }
+
+/* Cartes et listes */
+.carte {
+  background: var(--surface); border: 1px solid var(--trait);
+  border-top: 4px solid var(--primaire);
+  border-radius: 6px 6px 14px 14px; padding: 22px;
+  display: grid; gap: 14px; align-content: start; min-width: 0;
+}
+.carte h3 { color: var(--texte); }
+.carte p { color: var(--discret); font-size: .97rem; }
+.cartes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.liste { display: grid; gap: 12px; }
+.ligne-carte {
+  background: var(--surface); border: 1px solid var(--trait); border-radius: 14px;
+  padding: 18px 20px; display: grid; gap: 10px; min-width: 0;
+}
+.ligne-carte .titre { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ligne-carte .titre h3 { font-size: 1.1rem; }
+.ligne-carte .meta { color: var(--discret); font-size: .92rem; }
+.ligne-carte .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* Pastilles de statut */
+.statut {
+  font: 600 .75rem var(--f-titre); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--primaire); border: 1px solid color-mix(in srgb, var(--primaire) 55%, transparent);
+  border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.statut.jour { color: var(--halo); border-color: color-mix(in srgb, var(--halo) 55%, transparent); }
+.statut.succes { color: var(--succes); border-color: color-mix(in srgb, var(--succes) 55%, transparent); }
+.statut.avert { color: var(--avert); border-color: color-mix(in srgb, var(--avert) 55%, transparent); }
+.statut.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
+.statut.neutre { color: var(--discret); border-color: var(--trait); }
+
+/* Groupes à onglets segmentés (charte .modes) */
+.modes { display: inline-flex; border: 1px solid var(--trait); border-radius: 999px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.modes button {
+  font: 600 .85rem var(--f-titre); color: var(--discret); background: none; border: 0;
+  border-radius: 999px; padding: 8px 14px; cursor: pointer; min-height: 40px;
+}
+.modes button[aria-pressed="true"] { background: var(--primaire); color: var(--primaire-texte); }
+
+/* Formulaires */
+form { display: grid; gap: 14px; }
+.champ { display: grid; gap: 6px; }
+.champ > span, legend { font: 600 .85rem var(--f-titre); color: var(--texte); }
+.champ .aide { color: var(--discret); font-size: .85rem; }
+.champ .erreur { color: var(--danger); font-size: .9rem; font-weight: 600; }
+input[type="text"], input[type="date"], input[type="time"], input[type="number"],
+input[type="tel"], input[type="url"], select, textarea {
+  font: 400 1rem var(--f-texte); color: var(--texte);
+  background: var(--fond); border: 1px solid var(--trait); border-radius: 10px;
+  padding: 12px 14px; min-height: 48px; width: 100%;
+}
+textarea { min-height: 96px; resize: vertical; }
+input:focus, select:focus, textarea:focus { border-color: var(--primaire); }
+fieldset { border: 1px solid var(--trait); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+.checks { display: flex; gap: 8px 16px; flex-wrap: wrap; }
+.checks label { display: flex; gap: 8px; align-items: center; min-height: 40px; font-size: .95rem; }
+.checks input { width: 22px; height: 22px; accent-color: var(--primaire); }
+.radios { display: flex; gap: 8px 16px; flex-wrap: wrap; }
+.radios label { display: flex; gap: 8px; align-items: center; min-height: 40px; font-size: .95rem; }
+.radios input { width: 20px; height: 20px; accent-color: var(--primaire); }
+
+/* Modale */
+dialog {
+  border: 1px solid var(--trait); border-radius: 14px; background: var(--surface);
+  color: var(--texte); padding: 0; max-width: min(640px, 94vw); width: 100%;
+  max-height: 88vh; overflow: auto;
+}
+dialog::backdrop { background: rgba(0, 0, 0, .6); }
+.modal-in { padding: 22px; display: grid; gap: 16px; }
+.modal-in h3 { font-size: 1.4rem; }
+.modal-pied { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Toast */
+#toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  background: var(--surface); color: var(--texte); border: 1px solid var(--primaire);
+  border-radius: 12px; padding: 12px 20px; z-index: 50; max-width: min(560px, 92vw);
+  font-family: var(--f-titre); font-size: .95rem; display: none;
+}
+#toast.visible { display: block; }
+#toast.erreur { border-color: var(--danger); color: var(--danger); }
+
+/* Accueil : panneaux de suivi */
+.accueil-tete { display: grid; gap: 14px; margin-bottom: 24px; }
+.accueil-tete .date { color: var(--discret); font-size: 1.05rem; }
+.selecteurs { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+.selecteurs .champ { min-width: min(100%, 240px); }
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.panel-profil { background: var(--surface); border: 1px solid var(--trait); border-radius: 14px; padding: 20px; display: grid; gap: 16px; align-content: start; }
+.panel-profil > h3 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.groupe-suivi { display: grid; gap: 8px; }
+.groupe-suivi > .etiquette { border-bottom: 1px dashed var(--trait); padding-bottom: 6px; }
+.med { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--fond); border: 1px solid var(--trait); border-radius: 12px; padding: 12px 14px; }
+.med .nom { font-family: var(--f-titre); font-weight: 700; }
+.med .detail { color: var(--discret); font-size: .88rem; }
+.vide { color: var(--discret); font-style: italic; }
+
+/* Urgences */
+.urgences { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 16px; }
+.urgence-carte { background: var(--surface); border: 1px solid var(--trait); border-top: 4px solid var(--danger); border-radius: 6px 6px 14px 14px; padding: 20px; display: grid; gap: 10px; align-content: start; }
+.urgence-carte .num { font-family: var(--f-des); font-weight: 700; font-size: 1.6rem; color: var(--texte); }
+.urgence-carte p { color: var(--discret); font-size: .92rem; }
+
+/* Réglages */
+.reglage { background: var(--surface); border: 1px solid var(--trait); border-radius: 14px; padding: 22px; display: grid; gap: 14px; margin-bottom: 20px; }
+.reglage h3 { font-size: 1.1rem; }
+.reglage p { color: var(--discret); font-size: .97rem; }
+.reglage .ligne { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* Encarts et mention IA (charte .encart / .ia) */
+.encart { padding: 18px 20px; border: 1px solid var(--trait); border-radius: 12px; color: var(--discret); font-size: .95rem; max-width: 72ch; display: grid; gap: 8px; }
+.ia { display: grid; gap: 8px; padding: 18px 20px; border: 1px dashed var(--primaire); border-radius: 12px; max-width: 72ch; }
+.ia p { color: var(--discret); font-size: .95rem; }
+.ia strong { color: var(--texte); }
+
+footer.pied { border-top: 1px solid var(--trait); padding-block: 32px 48px; color: var(--discret); font-size: .9rem; display: grid; gap: 8px; max-width: 1080px; margin: 0 auto; padding-inline: 16px; }
+
+@media (max-width: 760px) {
+  .duo { grid-template-columns: minmax(0, 1fr); }
+  section.vue { padding-block: 32px 48px; }
+  .nav { margin-left: 0; width: 100%; }
+  .nav button { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  body { transition: none; }
+}
