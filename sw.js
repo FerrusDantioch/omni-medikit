@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const CACHE = 'omni-medikit-' + VERSION;
 const PREFIX = 'omni-medikit-';
 const COQUILLE = [
@@ -11,6 +11,7 @@ const COQUILLE = [
   'js/db.js',
   'js/logique.js',
   'js/app.js',
+  'js/vendor/qrcode.min.js',
   'icons/icon.svg',
   'icons/favicon.ico',
   'icons/icon-192.png',

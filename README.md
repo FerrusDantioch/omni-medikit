@@ -46,9 +46,33 @@ fonctionne sans aucune connexion.
   dans les réglages permet de chercher une mise à jour à tout moment. Rien ne
   change sans que l'utilisateur touche le bouton ; les données restent telles
   quelles.
-- **Rappels de prises** : heure de rappel facultative par traitement,
-  notifications (avec autorisation du navigateur) quand l'application est
-  ouverte ou en arrière-plan récent.
+- **Allergies en champ dédié** (plus « traitement en cas de crise allergique ») :
+  affiché en évidence sur l'accueil, dans Urgences, à l'impression, et même sur
+  l'écran de verrouillage via le bouton « Urgence : infos essentielles (sans
+  code) » (allergies, crise, traitements à vie, contact d'urgence, en lecture
+  seule).
+- **Constantes** : tension, poids, température, glycémie par personne, avec
+  historique imprimable.
+- **Stock de médicaments** : quantité initiale décomptée à chaque prise, alerte
+  « stock bas ».
+- **Observance** : pourcentage de prises effectuées sur 7 jours (accueil) et
+  30 jours (profils).
+- **Rappels de prises et de vaccins** : heure de rappel facultative par
+  traitement, date de rappel des vaccins, notifications (avec autorisation du
+  navigateur) quand l'application est ouverte ou en arrière-plan récent.
+- **Snapshots automatiques** : un snapshot des données est gardé chaque jour
+  (et avant chaque import/suppression) dans IndexedDB, les 5 plus récents sont
+  conservés et restaurables depuis les réglages.
+- **Fiche PDF** : bouton « Fiche PDF » dans les réglages — récapitulatif complet
+  (allergies, traitements, vaccins, constantes, contacts) imprimable / enregistrable
+  en PDF pour le médecin. Les onglets Traitements/Contacts/Constantes ont aussi un
+  bouton « Imprimer ».
+- **Taille de texte** réglable (normal / grand / très grand), persistante.
+- **Données de démonstration** : ajout/suppression d'un profil exemple.
+- **Transfert vers un autre appareil par QR code** (100 % hors ligne) : export
+  multi-images QR + scan via `BarcodeDetector` ; la librairie QR embarquée est
+  [qrcodejs](https://github.com/davidshimjs/qrcodejs) (MIT, licence dans
+  `js/vendor/LICENSE-qrcodejs.txt`).
 - **Verrouillage optionnel** par code à 4 chiffres à l'ouverture de l'application.
 - **Recherche** dans les traitements et les contacts, **impression** de la vue
   active (liste des traitements à montrer au médecin), **raccourcis** du
@@ -66,7 +90,9 @@ fonctionne sans aucune connexion.
   dates gérées en local.
 - **CI** : `.github/workflows/tests.yml` vérifie à chaque push la syntaxe JS,
   le manifeste, les tests unitaires (`tools/test-logique.js`), le test de rendu
-  (`tools/test-ui.js`) et la fraîcheur des icônes.
+  (`tools/test-ui.js`), la fraîcheur des icônes, plus un test navigateur Playwright
+  (`tools/e2e/e2e.mjs`) : service worker actif, rechargement 100 % hors ligne,
+  affichage des données, thèmes persistants.
 - Thèmes implémentés par **variables CSS** (`data-theme` sur `<html>`).
 - **Versionnement** : la version figure dans le champ `version` de
   `manifest.json`, dans la constante `VERSION` de `sw.js` (nom du cache

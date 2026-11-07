@@ -43,3 +43,22 @@ jobs:
             echo 'Les icônes ne sont pas à jour : régénérez-les avec "node tools/make-icons.js" et committez le résultat.'
             exit 1
           fi
+
+  e2e:
+    name: Test navigateur (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Installation de Playwright + Chromium
+        run: |
+          cd tools/e2e
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: PWA en conditions réelles (service worker, hors ligne, thèmes)
+        run: node tools/e2e/e2e.mjs

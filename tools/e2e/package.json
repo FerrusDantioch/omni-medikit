@@ -1,0 +1,9 @@
+{
+  "name": "omni-medikit-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Tests navigateur (Playwright) — outillage de développement uniquement, non embarqué dans l'application.",
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

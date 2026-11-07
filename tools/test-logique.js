@@ -77,6 +77,22 @@ ok(L.lienTel('01 23 45 67 89') === 'tel:+0123456789'.replace('+0', '0') || L.lie
 ok(L.lienSms('0612345678', 'Bonjour é').startsWith('sms:0612345678?&body='), 'sms: avec body encodé');
 ok(decodeURIComponent(L.lienSms('06', 'a b&c').split('body=')[1]) === 'a b&c', 'body correctement décodable');
 
+console.log('Activité et observance :');
+ok(L.estActifLe({ startDate: '2026-03-01', endDate: '2026-03-10' }, '2026-03-10'), 'actif le jour de la fin (inclus)');
+ok(!L.estActifLe({ startDate: '2026-03-01', endDate: '2026-03-10' }, '2026-03-11'), 'inactif après la fin');
+ok(!L.estActifLe({ startDate: '2026-03-05', endDate: '' }, '2026-03-04'), 'inactif avant le début');
+ok(L.estActifLe({ startDate: '2025-01-01', lifetime: true }, '2026-03-10'), 'à vie = actif pour toujours');
+const trs = [
+  { startDate: '2026-03-08', endDate: '2026-03-10', frequency: { type: 'quotidien' } },
+  { startDate: '2026-03-09', endDate: '', lifetime: true, frequency: { type: 'fois', foisParJour: 2 } }
+];
+const doses = [
+  { date: '2026-03-08' }, { date: '2026-03-09' }, { date: '2026-03-09' }, { date: '2026-03-10' }
+];
+ok(L.observance(trs, doses, '2026-03-10', 3) === 57, 'observance 3 j : 4 prises / 7 prévues (t1: 3 j × 1, t2 actif à partir du 09 : 2 j × 2) = 57 %, got ' + L.observance(trs, doses, '2026-03-10', 3));
+ok(L.observance(trs, [], '2026-03-10', 30) === 0, 'aucune prise → 0 %');
+ok(L.observance([], [], '2026-03-10', 7) === null, 'rien de prévu → null');
+
 console.log('Échappement HTML :');
 ok(L.escapeHtml('<script>alert("x")</script>') === '&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;', 'escapeHtml neutralise le HTML');
 

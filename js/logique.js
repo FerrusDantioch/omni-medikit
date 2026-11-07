@@ -115,6 +115,27 @@
     return 'en-cours';
   }
 
+  function estActifLe(t, dateISO) {
+    if (!t || !dateISO) return false;
+    if (t.startDate && dateISO < t.startDate) return false;
+    if (t.lifetime) return true;
+    return !t.endDate || dateISO <= t.endDate;
+  }
+
+  function observance(treatments, doses, ref, jours) {
+    const today = ref || aujourdhui();
+    let prevu = 0, pris = 0;
+    for (let i = 0; i < jours; i++) {
+      const d = ajouterJours(today, -i);
+      if (!d) continue;
+      for (const t of treatments || []) {
+        if (estActifLe(t, d)) prevu += dosesPrévuesParJour(t.frequency, d);
+      }
+      for (const dose of doses || []) if (dose.date === d) pris++;
+    }
+    return prevu > 0 ? Math.min(100, Math.round((pris / prevu) * 100)) : null;
+  }
+
   function statutRappel(reminderDate, ref) {
     if (!reminderDate || !estDateValide(reminderDate)) return null;
     const today = ref || aujourdhui();
@@ -201,7 +222,7 @@
     MOIS, JOURS,
     aujourdhui, estDateValide, parseDate, ajouterJours, diffJours, jourSemaine,
     formaterDate, formaterDateCourte, formaterDateHeure, nomJour, ageEnAnnees,
-    estProgrammeLe, dosesPrévuesParJour, decrireFrequence,
+    estProgrammeLe, dosesPrévuesParJour, decrireFrequence, estActifLe, observance,
     statutTraitement, statutRappel, uuid, normaliserTel, lienTel, lienSms,
     escapeHtml, validerProfil, validerTraitement, validerVaccin, validerContact
   };

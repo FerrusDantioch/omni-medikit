@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;700;800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@500;700&display=swap">
   <link rel="stylesheet" href="css/style.css">
-  <script>try{var t=localStorage.getItem('omni-medikit-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+  <script>try{var t=localStorage.getItem('omni-medikit-theme');if(t)document.documentElement.dataset.theme=t;var z=localStorage.getItem('omni-medikit-taille');if(z)document.documentElement.dataset.taille=z;}catch(e){}</script>
 </head>
 <body>
   <div id="verrou" hidden>
@@ -31,6 +31,16 @@
         <span class="erreur" id="verrou-erreur"></span>
       </div>
       <button type="button" class="bouton" id="verrou-ok">Déverrouiller</button>
+      <button type="button" class="petit-bouton" id="verrou-urgence">Urgence : infos essentielles (sans code)</button>
+    </div>
+  </div>
+
+  <div id="urgence-verrou" hidden>
+    <div class="verrou-carte" style="max-width:560px;max-height:82vh;overflow:auto;text-align:left">
+      <h2>Urgences — infos essentielles</h2>
+      <p class="aide">Lecture seule, sans déverrouiller. En cas d'urgence vitale, appelez d'abord le 15, le 18 ou le 112.</p>
+      <div id="urgence-verrou-corps" class="liste"></div>
+      <button type="button" class="bouton" id="urgence-verrou-fermer">Fermer</button>
     </div>
   </div>
 
@@ -46,6 +56,7 @@
         <button type="button" data-vue="vaccins">Vaccins</button>
         <button type="button" data-vue="contacts">Contacts</button>
         <button type="button" data-vue="urgences">Urgences</button>
+        <button type="button" data-vue="constantes">Constantes</button>
         <button type="button" data-vue="profils">Profils</button>
         <button type="button" data-vue="reglages">Réglages</button>
       </nav>
@@ -164,6 +175,23 @@
       </div>
     </section>
 
+    <section class="vue" id="vue-constantes" aria-labelledby="titre-constantes" hidden>
+      <div class="intro-section">
+        <p class="etiquette">Signes vitaux</p>
+        <h2 id="titre-constantes">Constantes</h2>
+        <p>Tension, poids, température, glycémie — par personne, avec historique.</p>
+      </div>
+      <div class="selecteurs" style="margin-bottom:20px">
+        <div class="champ">
+          <span id="label-filtre-constantes">Afficher</span>
+          <select id="filtre-constantes" aria-labelledby="label-filtre-constantes"></select>
+        </div>
+        <button type="button" class="bouton" id="btn-ajout-constante">+ Nouvelle mesure</button>
+        <button type="button" class="petit-bouton" data-action="imprimer">Imprimer</button>
+      </div>
+      <div id="liste-constantes" class="liste"></div>
+    </section>
+
     <section class="vue" id="vue-profils" aria-labelledby="titre-profils" hidden>
       <div class="intro-section">
         <p class="etiquette">Famille</p>
@@ -200,17 +228,38 @@
           <button type="button" data-theme="sombre" aria-pressed="false">Sombre</button>
           <button type="button" data-theme="clair" aria-pressed="false">Clair</button>
         </div>
+        <p style="margin-top:10px">Taille du texte :</p>
+        <div class="modes" role="group" aria-label="Taille du texte" id="choix-taille">
+          <button type="button" data-taille="normal" aria-pressed="true">Normal</button>
+          <button type="button" data-taille="grand" aria-pressed="false">Grand</button>
+          <button type="button" data-taille="tres-grand" aria-pressed="false">Très grand</button>
+        </div>
       </div>
 
       <div class="reglage">
         <h3>Données</h3>
-        <p>Toutes les données (profils, traitements, prises, vaccins, contacts, réglages) sont stockées uniquement sur cet appareil, dans IndexedDB. Exportez-les en JSON pour une sauvegarde manuelle, ou réimportez une sauvegarde.</p>
+        <p>Toutes les données (profils, traitements, prises, vaccins, contacts, constantes, réglages) sont stockées uniquement sur cet appareil, dans IndexedDB. Exportez-les en JSON pour une sauvegarde manuelle, ou réimportez une sauvegarde (chaque enregistrement est validé avant). Vous pouvez aussi ouvrir un fichier <span class="mono">.json</span> directement depuis le gestionnaire de fichiers de l’appareil, ou transférer les données vers un autre appareil par QR code.</p>
         <div class="ligne">
           <button type="button" class="bouton" id="btn-exporter">Exporter en JSON</button>
           <label class="bouton secondaire" for="input-import" style="cursor:pointer">Importer un JSON…</label>
           <input type="file" id="input-import" accept="application/json,.json" hidden>
+          <button type="button" class="bouton secondaire" id="btn-pdf">Fiche PDF (imprimer)</button>
+        </div>
+        <div class="ligne">
+          <button type="button" class="bouton secondaire" id="btn-qr-export">Transférer vers un autre appareil (QR)</button>
+          <button type="button" class="bouton secondaire" id="btn-qr-import">Recevoir un transfert (scanner)</button>
+        </div>
+        <div class="ligne">
+          <button type="button" class="bouton secondaire" id="btn-demo">Ajouter des données de démonstration</button>
+          <button type="button" class="bouton danger" id="btn-suppr-demo" hidden>Supprimer les données de démonstration</button>
         </div>
         <p class="aide" id="info-donnees"></p>
+        <h3 style="margin-top:8px">Snapshots automatiques</h3>
+        <p class="aide">Un snapshot des données est enregistré automatiquement chaque jour (et avant chaque import ou suppression), les 5 plus récents sont conservés.</p>
+        <div class="ligne">
+          <button type="button" class="petit-bouton" data-action="creer-snapshot">Créer un snapshot maintenant</button>
+        </div>
+        <div id="liste-snapshots" class="liste" style="margin-top:10px"></div>
       </div>
 
       <div class="reglage">
@@ -247,6 +296,8 @@
 
   </main>
 
+  <section id="fiche-impression" aria-hidden="true"></section>
+
   <footer class="pied">
     <p><strong>Omni-MediKit</strong> — suivi de traitement médical hors ligne. Données 100&nbsp;% locales.</p>
     <p>Développée par Ferrus Dantioch avec l'aide de l'IA · <a href="https://ferrusdantioch.github.io/omni-systeme/" target="_blank" rel="noopener">Portfolio omni-systeme</a> · Licence CC BY-NC-ND 4.0</p>
@@ -265,6 +316,7 @@
 
   <div id="toast" role="status" aria-live="polite"></div>
 
+  <script src="js/vendor/qrcode.min.js"></script>
   <script src="js/logique.js"></script>
   <script src="js/db.js"></script>
   <script src="js/app.js"></script>

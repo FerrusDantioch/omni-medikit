@@ -22,6 +22,7 @@
     doses: [],
     vaccines: [],
     contacts: [],
+    constantes: [],
     profilActif: null,
     duo: { mode: 'solo', a: null, b: null },
     filtreTraitements: '',
@@ -31,10 +32,19 @@
     rechercheContacts: '',
     rappels: false,
     lock: null,
+    tailleTexte: 'normal',
+    filtreConstantes: '',
     theme: 'charte'
   };
 
-  const VUES = ['accueil', 'traitements', 'vaccins', 'contacts', 'urgences', 'profils', 'reglages'];
+  const VUES = ['accueil', 'traitements', 'vaccins', 'contacts', 'urgences', 'constantes', 'profils', 'reglages'];
+
+  const TYPES_CONSTANTES = {
+    tension: 'Tension (ex. 12/8)',
+    poids: 'Poids (kg)',
+    temperature: 'Température (°C)',
+    glycemie: 'Glycémie (g/L)'
+  };
 
   const $ = (sel, el) => (el || document).querySelector(sel);
   const $$ = (sel, el) => Array.from((el || document).querySelectorAll(sel));
@@ -61,15 +71,16 @@
   }
 
   async function chargerDonnees() {
-    const [profiles, treatments, doses, vaccines, contacts] = await Promise.all([
+    const [profiles, treatments, doses, vaccines, contacts, constantes] = await Promise.all([
       DB.tout('profiles'), DB.tout('treatments'), DB.tout('doses'),
-      DB.tout('vaccines'), DB.tout('contacts')
+      DB.tout('vaccines'), DB.tout('contacts'), DB.tout('constantes')
     ]);
     etat.profiles = profiles.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
     etat.treatments = treatments;
     etat.doses = doses;
     etat.vaccines = vaccines;
     etat.contacts = contacts;
+    etat.constantes = constantes;
     etat.profilActif = await DB.getSetting('profilActif', null);
     if (!etat.profilActif || !profil(etat.profilActif)) etat.profilActif = etat.profiles[0] ? etat.profiles[0].id : null;
     etat.duo = await DB.getSetting('duo', { mode: 'solo', a: etat.profilActif, b: null });
@@ -78,6 +89,7 @@
     etat.theme = await DB.getSetting('theme', 'charte');
     etat.rappels = await DB.getSetting('rappels', false);
     etat.lock = await DB.getSetting('lock', null);
+    etat.tailleTexte = await DB.getSetting('tailleTexte', 'normal');
   }
 
   async function sauvegarderCle(cle, valeur) { await DB.setSetting(cle, valeur); }
@@ -131,6 +143,19 @@
     return etat.doses.filter((d) => d.treatmentId === treatmentId && d.date === today);
   }
 
+  function stockRestant(t) {
+    if (t.stockInitial === null || t.stockInitial === undefined || t.stockInitial === '') return null;
+    const pris = etat.doses.filter((d) => d.treatmentId === t.id).length;
+    return Math.max(0, Number(t.stockInitial) - pris);
+  }
+
+  function stockHtml(t) {
+    const s = stockRestant(t);
+    if (s === null) return '';
+    const unite = t.stockUnite ? ' ' + esc(t.stockUnite) : '';
+    return ' · stock : <strong>' + s + unite + '</strong>' + (s <= 3 ? ' <span class="statut avert">stock bas</span>' : '');
+  }
+
   function actionPriseHTML(t, today) {
     const prevu = L.dosesPrévuesParJour(t.frequency, today);
     const prises = dosesAujourdhui(t.id, today).length;
@@ -146,7 +171,7 @@
     const fin = t.lifetime ? 'traitement à vie' : 'fin le ' + L.formaterDateCourte(t.endDate);
     return '<div class="med">' +
       '<div><div class="nom">' + esc(t.name) + (t.dosage ? ' — ' + esc(t.dosage) : '') + '</div>' +
-      '<div class="detail">' + esc(L.decrireFrequence(t.frequency)) + ' · début ' + L.formaterDateCourte(t.startDate) + (t.reminderTime ? ' · rappel à ' + esc(t.reminderTime) : '') + ' · ' + fin + '</div></div>' +
+      '<div class="detail">' + esc(L.decrireFrequence(t.frequency)) + ' · début ' + L.formaterDateCourte(t.startDate) + (t.reminderTime ? ' · rappel à ' + esc(t.reminderTime) : '') + stockHtml(t) + ' · ' + fin + '</div></div>' +
       (avecBouton ? actionPriseHTML(t, today) : '') + '</div>';
   }
 
@@ -168,6 +193,14 @@
     const age = p.birthdate ? L.ageEnAnnees(p.birthdate, today) : null;
     let html = '<article class="panel-profil" aria-label="Suivi de ' + esc(p.name) + '">' +
       '<h3>' + esc(p.name) + (age !== null ? ' <span class="statut neutre">' + age + ' ans</span>' : '') + '</h3>';
+    if (p.allergies || p.criseAllergique) {
+      html += '<div class="alerte-sante">' +
+        (p.allergies ? '<p><strong>⚠ Allergies :</strong> ' + esc(p.allergies) + '</p>' : '') +
+        (p.criseAllergique ? '<p><strong>En cas de crise allergique :</strong> ' + esc(p.criseAllergique) + '</p>' : '') +
+        '</div>';
+    }
+    const obs7 = L.observance(trs, etat.doses.filter((d) => d.profileId === id), today, 7);
+    if (obs7 !== null) html += '<p class="meta">Observance sur 7 jours : <strong>' + obs7 + ' %</strong></p>';
 
     html += '<div class="groupe-suivi"><span class="etiquette">Aujourd’hui (' + L.formaterDateCourte(today) + ')</span>';
     if (duJour.length) html += duJour.map((t) => ligneMed(t, today, true)).join('');
@@ -261,6 +294,9 @@
         (age !== null ? '<span class="statut neutre">' + age + ' ans</span>' : '') + '</div>' +
         (p.birthdate ? '<p>Né(e) le ' + L.formaterDate(p.birthdate) + '</p>' : '') +
         (p.note ? '<p>' + esc(p.note) + '</p>' : '') +
+        (p.allergies ? '<p><span class="statut danger">⚠ Allergies : ' + esc(p.allergies) + '</span></p>' : '') +
+        (p.criseAllergique ? '<p><strong>Crise allergique :</strong> ' + esc(p.criseAllergique) + '</p>' : '') +
+        (() => { const o = L.observance(etat.treatments.filter((t) => t.profileId === p.id), etat.doses.filter((d) => d.profileId === p.id), L.aujourdhui(), 30); return o === null ? '' : '<p class="meta">Observance 30 jours : ' + o + ' %</p>'; })() +
         (ec && (ec.name || ec.phone) ? '<p>Contact d’urgence : <strong>' + esc(ec.name || '—') + '</strong> ' + esc(ec.phone || '') +
           ' (' + (ec.mode === 'sms' ? 'SMS' : 'appel') + ')</p>' : '<p class="vide">Aucun contact d’urgence configuré.</p>') +
         '<div class="ligne" style="display:flex;gap:10px;flex-wrap:wrap">' +
@@ -291,7 +327,7 @@
       const programme = actif && L.estProgrammeLe(t.frequency, today);
       return '<article class="ligne-carte">' +
         '<div class="titre"><h3>' + esc(t.name) + (t.dosage ? ' <span class="meta">· ' + esc(t.dosage) + '</span>' : '') + '</h3>' + statutPill(t, today) + '</div>' +
-        '<p class="meta">' + esc(nomProfil(t.profileId)) + ' · ' + esc(L.decrireFrequence(t.frequency)) + (t.reminderTime ? ' · rappel à ' + esc(t.reminderTime) : '') + ' · début ' + L.formaterDateCourte(t.startDate) +
+        '<p class="meta">' + esc(nomProfil(t.profileId)) + ' · ' + esc(L.decrireFrequence(t.frequency)) + (t.reminderTime ? ' · rappel à ' + esc(t.reminderTime) : '') + stockHtml(t) + ' · début ' + L.formaterDateCourte(t.startDate) +
         (t.lifetime ? ' · <strong>à vie</strong>' : ' · fin ' + L.formaterDateCourte(t.endDate)) + '</p>' +
         (t.note ? '<p class="meta">' + esc(t.note) + '</p>' : '') +
         '<div class="actions">' +
@@ -358,6 +394,64 @@
     }).join('');
   }
 
+  function renderConstantes() {
+    optionsProfils($('#filtre-constantes'), etat.filtreConstantes, true);
+    const el = $('#liste-constantes');
+    let liste = etat.constantes.slice();
+    if (etat.filtreConstantes) liste = liste.filter((c) => c.profileId === etat.filtreConstantes);
+    liste.sort((a, b) => (b.date + (b.heure || '')).localeCompare(a.date + (a.heure || '')));
+    if (!liste.length) {
+      el.innerHTML = '<div class="encart"><p>Aucune mesure enregistrée.</p></div>';
+      return;
+    }
+    el.innerHTML = '<table class="table"><thead><tr><th>Date</th><th>Personne</th><th>Mesure</th><th>Valeur</th><th>Note</th><th></th></tr></thead><tbody>' +
+      liste.map((c) => '<tr>' +
+        '<td>' + L.formaterDateCourte(c.date) + (c.heure ? ' ' + esc(c.heure) : '') + '</td>' +
+        '<td>' + esc(nomProfil(c.profileId)) + '</td>' +
+        '<td>' + esc(TYPES_CONSTANTES[c.type] || c.type) + '</td>' +
+        '<td><strong class="mono">' + esc(c.valeur) + '</strong></td>' +
+        '<td>' + esc(c.note || '') + '</td>' +
+        '<td><button type="button" class="petit-bouton" data-action="edit-constante" data-id="' + esc(c.id) + '">Modifier</button> ' +
+        '<button type="button" class="petit-bouton" style="color:var(--danger);border-color:var(--danger)" data-action="del-constante" data-id="' + esc(c.id) + '">Supprimer</button></td>' +
+        '</tr>').join('') + '</tbody></table>';
+  }
+
+  function formConstanteHTML(c) {
+    let options = '<option value="">— choisir —</option>';
+    for (const p of etat.profiles) options += '<option value="' + esc(p.id) + '"' + (c.profileId === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>';
+    const types = Object.entries(TYPES_CONSTANTES).map(([k, v]) => '<option value="' + k + '"' + (c.type === k ? ' selected' : '') + '>' + esc(v) + '</option>').join('');
+    return '<div class="champ" data-cle="profileId"><span>Personne</span><select name="profileId" required>' + options + '</select><span class="erreur" data-erreur="profileId"></span></div>' +
+      '<div class="champ" data-cle="type"><span>Mesure</span><select name="type" required>' + types + '</select><span class="erreur" data-erreur="type"></span></div>' +
+      '<div class="champ" data-cle="valeur"><span>Valeur</span><input type="text" name="valeur" required maxlength="40" placeholder="ex. 12/8, 72, 37,2, 0,95" value="' + esc(c.valeur || '') + '"><span class="erreur" data-erreur="valeur"></span></div>' +
+      '<div class="champ" data-cle="date"><span>Date</span><input type="date" name="date" required value="' + esc(c.date || L.aujourdhui()) + '"><span class="erreur" data-erreur="date"></span></div>' +
+      champ('Heure (facultative)', '<input type="time" name="heure" value="' + esc(c.heure || '') + '">') +
+      champ('Note', '<textarea name="note">' + esc(c.note || '') + '</textarea>');
+  }
+
+  async function enregistrerConstante() {
+    const f = modalForm;
+    const c = {
+      id: f.dataset.id || L.uuid(),
+      profileId: lireValeur(f, 'profileId'),
+      type: lireValeur(f, 'type'),
+      valeur: lireValeur(f, 'valeur').trim(),
+      date: lireValeur(f, 'date'),
+      heure: lireValeur(f, 'heure') || '',
+      note: lireValeur(f, 'note').trim()
+    };
+    const erreurs = {};
+    if (!c.profileId) erreurs.profileId = 'Choisissez une personne.';
+    if (!c.type) erreurs.type = 'Choisissez une mesure.';
+    if (!c.valeur) erreurs.valeur = 'La valeur est obligatoire.';
+    if (!c.date || !L.estDateValide(c.date)) erreurs.date = 'Date invalide.';
+    if (Object.keys(erreurs).length) { afficherErreurs(erreurs); return; }
+    await DB.put('constantes', c);
+    await chargerDonnees();
+    renderTout();
+    fermerModal();
+    toast('Mesure enregistrée.');
+  }
+
   function renderUrgences() {
     $('#liste-urgences').innerHTML = URGENCES.map((u) =>
       '<article class="urgence-carte"><span class="etiquette">' + esc(u.nom) + '</span>' +
@@ -368,19 +462,30 @@
     ).join('');
 
     const el = $('#contacts-urgence');
-    const avecEc = etat.profiles.filter((p) => p.emergencyContact && p.emergencyContact.phone);
-    if (!avecEc.length) {
-      el.innerHTML = '<p class="vide">Aucun contact d’urgence configuré — à définir dans l’onglet Profils.</p>';
+    if (!etat.profiles.length) {
+      el.innerHTML = '<p class="vide">Aucun profil — à créer dans l’onglet Profils.</p>';
       return;
     }
-    el.innerHTML = avecEc.map((p) => {
-      const ec = p.emergencyContact;
-      const href = ec.mode === 'sms'
-        ? L.lienSms(ec.phone, (ec.smsText || SMS_DEFAUT).replaceAll('{prenom}', p.name))
-        : L.lienTel(ec.phone);
-      return '<div class="med"><div><div class="nom">' + esc(p.name) + ' → ' + esc(ec.name || 'Contact d’urgence') + '</div>' +
-        '<div class="detail">' + esc(ec.phone) + ' · ' + (ec.mode === 'sms' ? 'SMS pré-rédigé : « ' + esc(ec.smsText || SMS_DEFAUT) + ' »' : 'appel direct') + '</div></div>' +
-        '<a class="petit-bouton urgence" href="' + esc(href) + '">' + (ec.mode === 'sms' ? 'Envoyer le SMS' : 'Appeler') + '</a></div>';
+    el.innerHTML = etat.profiles.map((p) => {
+      const ec = p.emergencyContact || {};
+      let html = '<div class="ligne-carte"><h3 style="font-size:1.05rem">' + esc(p.name) + '</h3>';
+      if (p.allergies || p.criseAllergique) {
+        html += '<div class="alerte-sante">' +
+          (p.allergies ? '<p><strong>⚠ Allergies :</strong> ' + esc(p.allergies) + '</p>' : '') +
+          (p.criseAllergique ? '<p><strong>En cas de crise allergique :</strong> ' + esc(p.criseAllergique) + '</p>' : '') +
+          '</div>';
+      }
+      if (ec.phone) {
+        const href = ec.mode === 'sms'
+          ? L.lienSms(ec.phone, (ec.smsText || SMS_DEFAUT).replaceAll('{prenom}', p.name))
+          : L.lienTel(ec.phone);
+        html += '<div class="med"><div><div class="nom">' + esc(ec.name || 'Contact d’urgence') + '</div>' +
+          '<div class="detail">' + esc(ec.phone) + ' · ' + (ec.mode === 'sms' ? 'SMS pré-rédigé : « ' + esc(ec.smsText || SMS_DEFAUT) + ' »' : 'appel direct') + '</div></div>' +
+          '<a class="petit-bouton urgence" href="' + esc(href) + '">' + (ec.mode === 'sms' ? 'Envoyer le SMS' : 'Appeler') + '</a></div>';
+      } else {
+        html += '<p class="vide">Aucun contact d’urgence configuré — à définir dans l’onglet Profils.</p>';
+      }
+      return html + '</div>';
     }).join('');
   }
 
@@ -403,6 +508,25 @@
         : ' Notifications non autorisées : seuls des messages internes seront affichés.';
     }
     $('#info-rappels').textContent = infoRappels;
+    $$('#choix-taille button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.taille === etat.tailleTexte)));
+    $('#btn-suppr-demo').hidden = !etat.profiles.some((p) => p.demo);
+    renderSnapshots();
+  }
+
+  async function renderSnapshots() {
+    const el = $('#liste-snapshots');
+    if (!el) return;
+    const liste = await DB.listerSnapshots();
+    if (!liste.length) { el.innerHTML = '<p class="vide">Aucun snapshot pour l’instant.</p>'; return; }
+    el.innerHTML = liste.map((s) => '<div class="med"><div><div class="nom">' + L.formaterDateHeure(s.date) + '</div></div>' +
+      '<button type="button" class="petit-bouton" data-action="restaurer-snapshot" data-id="' + esc(s.id) + '">Restaurer</button></div>').join('');
+  }
+
+  function appliquerTaille(t) {
+    etat.tailleTexte = t;
+    document.documentElement.dataset.taille = t;
+    try { localStorage.setItem('omni-medikit-taille', t); } catch (e) {}
+    $$('#choix-taille button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.taille === t)));
   }
 
   function renderTout() {
@@ -411,6 +535,7 @@
     renderTraitements();
     renderVaccins();
     renderContacts();
+    renderConstantes();
     renderUrgences();
     renderReglages();
     planifierRappels();
@@ -473,7 +598,9 @@
     const ec = p.emergencyContact || {};
     return '<div class="champ" data-cle="name"><span>Prénom ou nom</span><input type="text" name="name" required maxlength="80" value="' + esc(p.name || '') + '"><span class="aide">Obligatoire.</span><span class="erreur" data-erreur="name"></span></div>' +
       '<div class="champ" data-cle="birthdate"><span>Date de naissance (facultative)</span><input type="date" name="birthdate" value="' + esc(p.birthdate || '') + '"><span class="erreur" data-erreur="birthdate"></span></div>' +
-      champ('Note libre', '<textarea name="note">' + esc(p.note || '') + '</textarea>', 'Allergies, groupe sanguin, remarques…') +
+      champ('Note libre', '<textarea name="note">' + esc(p.note || '') + '</textarea>', 'Groupe sanguin, remarques…') +
+      champ('Allergies', '<textarea name="allergies" placeholder="ex. arachides, pénicilline…">' + esc(p.allergies || '') + '</textarea>', 'Champ dédié, affiché en évidence sur l’accueil, dans Urgences, à l’impression et en cas de verrouillage.') +
+      champ('Traitement en cas de crise allergique', '<textarea name="criseAllergique" placeholder="ex. adrénaline (auto-injecteur), puis appeler le 15">' + esc(p.criseAllergique || '') + '</textarea>', 'Médicament d’urgence (adrénaline, antihistaminique) et conduite à tenir.') +
       '<fieldset><legend>Contact d’urgence (facultatif)</legend>' +
       champ('Nom du contact', '<input type="text" name="ecName" maxlength="80" value="' + esc(ec.name || '') + '">') +
       '<div class="champ" data-cle="ecPhone"><span>Téléphone</span><input type="tel" name="ecPhone" value="' + esc(ec.phone || '') + '"><span class="erreur" data-erreur="ecPhone"></span></div>' +
@@ -499,6 +626,8 @@
       name: lireValeur(f, 'name').trim(),
       birthdate: lireValeur(f, 'birthdate') || '',
       note: lireValeur(f, 'note').trim(),
+      allergies: lireValeur(f, 'allergies').trim(),
+      criseAllergique: lireValeur(f, 'criseAllergique').trim(),
       emergencyContact: {
         name: lireValeur(f, 'ecName').trim(),
         phone: lireValeur(f, 'ecPhone').trim(),
@@ -528,6 +657,8 @@
       '<div class="champ" data-cle="endDate" id="champ-fin"><span>Date de fin</span><input type="date" name="endDate" value="' + esc(t.endDate || '') + '"><span class="erreur" data-erreur="endDate"></span></div>' +
       champ('Durée en jours (facultatif, calcule la date de fin)', '<input type="number" name="dureeJours" min="1" max="36500" placeholder="ex. 10">', 'La date de fin = début + durée − 1. Vous pouvez aussi saisir la date de fin directement.') +
       champ('Heure de rappel (facultative)', '<input type="time" name="reminderTime" value="' + esc(t.reminderTime || '') + '">', 'Notification envoyée à cette heure, les jours de prise.') +
+      champ('Stock initial (facultatif)', '<input type="number" name="stockInitial" min="0" max="100000" placeholder="ex. 30" value="' + (t.stockInitial ?? '') + '">', 'Nombre d’unités au départ : décompté automatiquement à chaque prise.') +
+      champ('Unité du stock', '<input type="text" name="stockUnite" maxlength="30" placeholder="comprimés, ml…" value="' + esc(t.stockUnite || '') + '">') +
       '<fieldset><legend>Fréquence</legend>' +
       '<div class="radios" role="radiogroup" aria-label="Type de fréquence">' +
       '<label><input type="radio" name="freqType" value="quotidien"' + (f.type === 'quotidien' ? ' checked' : '') + '> Quotidienne (1 fois/jour)</label>' +
@@ -575,6 +706,8 @@
       lifetime: lifetime,
       frequency: frequency,
       reminderTime: lireValeur(f, 'reminderTime') || '',
+      stockInitial: lireValeur(f, 'stockInitial') === '' ? null : Number(lireValeur(f, 'stockInitial')),
+      stockUnite: lireValeur(f, 'stockUnite').trim(),
       note: lireValeur(f, 'note').trim(),
       createdAt: f.dataset.created || new Date().toISOString()
     };
@@ -775,6 +908,7 @@
       etat.contacts.length + ' contact(s)) par le contenu de « ' + esc(nomFichier) + ' ». Continuer ?',
       async () => {
         try {
+          await DB.creerSnapshot();
           await DB.importerTout(json);
           await chargerDonnees();
           renderTout();
@@ -800,6 +934,32 @@
         renderTout();
         toast('Prise supprimée.');
       }
+      else if (action === 'creer-snapshot') {
+        await DB.creerSnapshot();
+        await renderSnapshots();
+        toast('Snapshot créé.');
+      }
+      else if (action === 'restaurer-snapshot') {
+        confirmerSuppression('Restaurer un snapshot',
+          'Remplacer les données actuelles par celles de ce snapshot ? Un snapshot de sécurité des données actuelles est d’abord créé.',
+          async () => {
+            await DB.creerSnapshot();
+            await DB.restaurerSnapshot(id);
+            await chargerDonnees();
+            renderTout();
+            toast('Snapshot restauré.');
+          });
+      }
+      else if (action === 'del-constante') {
+        confirmerSuppression('Supprimer la mesure', 'Supprimer cette mesure ?',
+          async () => { await DB.supprimer('constantes', id); await chargerDonnees(); renderTout(); toast('Mesure supprimée.'); });
+      }
+      else if (action === 'edit-constante') {
+        const c = etat.constantes.find((x) => x.id === id);
+        modalForm.dataset.id = c.id;
+        modalForm.removeAttribute('data-created');
+        ouvrirModal('Modifier la mesure', formConstanteHTML(c), enregistrerConstante);
+      }
       else if (action === 'hist-traitement') {
         const t = etat.treatments.find((x) => x.id === id);
         if (t) modalHistorique(t);
@@ -816,6 +976,7 @@
         confirmerSuppression('Supprimer le profil',
           'Supprimer <strong>' + esc(p.name) + '</strong> et <strong>toutes ses données</strong> (traitements, prises, vaccins, contacts) ? Cette action est irréversible — pensez à exporter vos données en JSON avant.',
           async () => {
+            await DB.creerSnapshot();
             await DB.supprimerProfilCascade(id);
             await chargerDonnees();
             renderTout();
@@ -834,6 +995,7 @@
         confirmerSuppression('Supprimer le traitement',
           'Supprimer <strong>' + esc(t.name) + '</strong> et tout son historique de prises ?',
           async () => {
+            await DB.creerSnapshot();
             await DB.supprimerTraitementCascade(id);
             await chargerDonnees();
             renderTout();
@@ -902,6 +1064,7 @@
   $('#filtre-traitements').addEventListener('change', (e) => { etat.filtreTraitements = e.target.value; renderTraitements(); });
   $('#filtre-vaccins').addEventListener('change', (e) => { etat.filtreVaccins = e.target.value; renderVaccins(); });
   $('#filtre-contacts').addEventListener('change', (e) => { etat.filtreContacts = e.target.value; renderContacts(); });
+  $('#filtre-constantes').addEventListener('change', (e) => { etat.filtreConstantes = e.target.value; renderConstantes(); });
 
   $('#btn-ajout-profil').addEventListener('click', () => {
     modalForm.removeAttribute('data-id');
@@ -925,12 +1088,43 @@
     modalForm.removeAttribute('data-id');
     ouvrirModal('Nouveau contact médical', formContactHTML({}), enregistrerContact);
   });
+  $('#btn-ajout-constante').addEventListener('click', () => {
+    if (!etat.profiles.length) { toast('Créez d’abord un profil.', true); showVue('profils'); return; }
+    modalForm.removeAttribute('data-id');
+    ouvrirModal('Nouvelle mesure', formConstanteHTML({}), enregistrerConstante);
+  });
 
   $$('#choix-theme button').forEach((b) => b.addEventListener('click', async () => {
     appliquerTheme(b.dataset.theme);
     await sauvegarderCle('theme', b.dataset.theme);
     toast('Thème « ' + b.textContent.trim() + ' » appliqué.');
   }));
+
+  $$('#choix-taille button').forEach((b) => b.addEventListener('click', async () => {
+    appliquerTaille(b.dataset.taille);
+    await sauvegarderCle('tailleTexte', b.dataset.taille);
+    toast('Taille du texte : ' + b.textContent.trim());
+  }));
+
+  $('#btn-pdf').addEventListener('click', () => {
+    remplirFicheImpression();
+    document.body.classList.add('impression-fiche');
+    window.print();
+  });
+  window.addEventListener('afterprint', () => document.body.classList.remove('impression-fiche'));
+
+  $('#btn-demo').addEventListener('click', () => confirmerSuppression('Données de démonstration',
+    'Ajouter un profil de démonstration (Léa : allergie, traitement de crise, traitements, vaccin, contact, constante) ? Un snapshot est d’abord créé.',
+    ajouterDonneesDemo));
+  $('#btn-suppr-demo').addEventListener('click', () => confirmerSuppression('Supprimer les données de démonstration',
+    'Supprimer le(s) profil(s) de démonstration et toutes leurs données ? Un snapshot est d’abord créé.',
+    supprimerDonneesDemo));
+
+  $('#btn-qr-export').addEventListener('click', () => { ouvrirExportQR().catch((e) => toast('QR impossible : ' + e.message, true)); });
+  $('#btn-qr-import').addEventListener('click', () => { ouvrirImportQR().catch((e) => toast('Scan impossible : ' + e.message, true)); });
+
+  $('#verrou-urgence').addEventListener('click', () => { ouvrirUrgenceVerrou().catch(() => {}); });
+  $('#urgence-verrou-fermer').addEventListener('click', () => { $('#urgence-verrou').hidden = true; });
 
   $('#btn-exporter').addEventListener('click', () => { exporterDonnees().catch((e) => toast('Export impossible : ' + e.message, true)); });
   $('#input-import').addEventListener('change', (e) => {
@@ -961,7 +1155,7 @@
   $('#btn-verrou').addEventListener('click', () => ouvrirModalVerrou(false));
   $('#btn-desactiver-verrou').addEventListener('click', () => ouvrirModalVerrou(true));
 
-  const VERSION_APP = '1.1.0';
+  const VERSION_APP = '1.2.0';
   let inscriptionSw = null;
   let miseAJourDemandee = false;
   let minuteurRappel = null;
@@ -1102,6 +1296,8 @@
       });
   }
 
+  const rappelsVaccinsEnvoyes = new Set();
+
   function prochaineEcheanceRappel() {
     const today = L.aujourdhui();
     const now = new Date();
@@ -1114,7 +1310,17 @@
       if (!m) continue;
       const d = new Date();
       d.setHours(Number(m[1]), Number(m[2]), 0, 0);
-      if (d > now && (!best || d < best.date)) best = { date: d, t: t };
+      if (d > now && (!best || d < best.date)) best = { date: d, kind: 'prise', t: t };
+    }
+    for (const v of etat.vaccines) {
+      if (!v.reminderDate || !L.estDateValide(v.reminderDate)) continue;
+      if (rappelsVaccinsEnvoyes.has(v.id)) continue;
+      const d = new Date();
+      const [y, mo, da] = v.reminderDate.split('-').map(Number);
+      d.setFullYear(y, mo - 1, da);
+      d.setHours(9, 0, 0, 0);
+      if (d > now && (!best || d < best.date)) best = { date: d, kind: 'vaccin', v: v };
+      else if (v.reminderDate <= today) best = best && best.date < now ? best : { date: new Date(now.getTime() + 5000), kind: 'vaccin', v: v };
     }
     return best;
   }
@@ -1127,23 +1333,208 @@
     if (!next) return;
     minuteurRappel = setTimeout(() => {
       const today = L.aujourdhui();
-      const prises = dosesAujourdhui(next.t.id, today).length;
-      const prevu = L.dosesPrévuesParJour(next.t.frequency, today);
-      if (prises < prevu) {
-        const corps = next.t.name + (next.t.dosage ? ' (' + next.t.dosage + ')' : '') + ' — ' + nomProfil(next.t.profileId);
+      if (next.kind === 'vaccin') {
+        rappelsVaccinsEnvoyes.add(next.v.id);
+        const corps = 'Rappel de vaccin : ' + next.v.name + ' — ' + nomProfil(next.v.profileId);
         if ('Notification' in window && Notification.permission === 'granted') {
-          try { new Notification('Rappel de prise — Omni-MediKit', { body: corps, tag: next.t.id }); } catch (e) {}
+          try { new Notification('Rappel de vaccin — Omni-MediKit', { body: corps, tag: 'vaccin-' + next.v.id }); } catch (e) {}
         }
-        toast('Rappel de prise : ' + corps);
+        toast(corps);
+      } else {
+        const prises = dosesAujourdhui(next.t.id, today).length;
+        const prevu = L.dosesPrévuesParJour(next.t.frequency, today);
+        if (prises < prevu) {
+          const corps = next.t.name + (next.t.dosage ? ' (' + next.t.dosage + ')' : '') + ' — ' + nomProfil(next.t.profileId);
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try { new Notification('Rappel de prise — Omni-MediKit', { body: corps, tag: next.t.id }); } catch (e) {}
+          }
+          toast('Rappel de prise : ' + corps);
+        }
       }
       planifierRappels();
     }, Math.max(1000, next.date.getTime() - Date.now()));
+  }
+
+  function remplirFicheImpression() {
+    const today = L.aujourdhui();
+    let html = '<h1>Omni-MediKit — fiche médicale</h1><p>Imprimée le ' + L.formaterDate(today) + '. Données locales de l’appareil.</p>';
+    for (const p of etat.profiles) {
+      const age = p.birthdate ? L.ageEnAnnees(p.birthdate, today) : null;
+      html += '<h2>' + esc(p.name) + (age !== null ? ' (' + age + ' ans)' : '') + '</h2>';
+      if (p.allergies || p.criseAllergique) {
+        html += '<div class="alerte-sante">' +
+          (p.allergies ? '<p><strong>Allergies :</strong> ' + esc(p.allergies) + '</p>' : '') +
+          (p.criseAllergique ? '<p><strong>En cas de crise allergique :</strong> ' + esc(p.criseAllergique) + '</p>' : '') +
+          '</div>';
+      }
+      const ec = p.emergencyContact || {};
+      if (ec.phone) html += '<p><strong>Contact d’urgence :</strong> ' + esc(ec.name || '—') + ' — ' + esc(ec.phone) + ' (' + (ec.mode === 'sms' ? 'SMS pré-rédigé' : 'appel direct') + ')</p>';
+      const trs = etat.treatments.filter((t) => t.profileId === p.id);
+      if (trs.length) {
+        html += '<h3>Traitements</h3><table><thead><tr><th>Médicament</th><th>Dosage</th><th>Fréquence</th><th>Début</th><th>Fin</th><th>Statut</th><th>Stock</th></tr></thead><tbody>';
+        for (const t of trs) {
+          const s = stockRestant(t);
+          html += '<tr><td>' + esc(t.name) + '</td><td>' + esc(t.dosage || '') + '</td><td>' + esc(L.decrireFrequence(t.frequency)) + (t.reminderTime ? ' (rappel ' + esc(t.reminderTime) + ')' : '') + '</td><td>' + L.formaterDateCourte(t.startDate) + '</td><td>' + (t.lifetime ? 'à vie' : L.formaterDateCourte(t.endDate)) + '</td><td>' + esc(L.statutTraitement(t, today)) + '</td><td>' + (s === null ? '—' : s + (t.stockUnite ? ' ' + esc(t.stockUnite) : '')) + '</td></tr>';
+        }
+        html += '</tbody></table>';
+      }
+      const vacs = etat.vaccines.filter((v) => v.profileId === p.id);
+      if (vacs.length) {
+        html += '<h3>Vaccins</h3><table><thead><tr><th>Vaccin</th><th>Dernière injection</th><th>Prochain rappel</th></tr></thead><tbody>' +
+          vacs.map((v) => '<tr><td>' + esc(v.name) + '</td><td>' + (v.lastDate ? L.formaterDateCourte(v.lastDate) : '—') + '</td><td>' + (v.reminderDate ? L.formaterDateCourte(v.reminderDate) : '—') + '</td></tr>').join('') + '</tbody></table>';
+      }
+      const consts = etat.constantes.filter((c) => c.profileId === p.id).slice(0, 10);
+      if (consts.length) {
+        html += '<h3>Dernières constantes</h3><table><thead><tr><th>Date</th><th>Mesure</th><th>Valeur</th></tr></thead><tbody>' +
+          consts.map((c) => '<tr><td>' + L.formaterDateCourte(c.date) + (c.heure ? ' ' + esc(c.heure) : '') + '</td><td>' + esc(TYPES_CONSTANTES[c.type] || c.type) + '</td><td>' + esc(c.valeur) + '</td></tr>').join('') + '</tbody></table>';
+      }
+    }
+    const globaux = etat.contacts.filter((c) => !c.profileId);
+    if (globaux.length) {
+      html += '<h2>Contacts médicaux (globaux)</h2><table><thead><tr><th>Nom</th><th>Spécialité</th><th>Téléphone</th><th>Adresse</th></tr></thead><tbody>' +
+        globaux.map((c) => '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.specialty || '') + '</td><td>' + esc(c.phone || '') + '</td><td>' + esc(c.address || '') + '</td></tr>').join('') + '</tbody></table>';
+    }
+    html += '<p style="margin-top:12px;font-size:.85rem">En cas d’urgence vitale : 15 (SAMU), 18 (pompiers), 112 (Europe), 114 (sourds et malentendants). Omni-MediKit est un outil de suivi personnel, pas un dispositif médical.</p>';
+    $('#fiche-impression').innerHTML = html;
+  }
+
+  async function ajouterDonneesDemo() {
+    await DB.creerSnapshot();
+    const today = L.aujourdhui();
+    await DB.put('profiles', {
+      id: 'demo-lea', demo: true, name: 'Léa (démo)', birthdate: '2015-04-02', note: 'Profil de démonstration.',
+      allergies: 'Arachides', criseAllergique: 'Adrénaline (auto-injecteur), puis appeler le 15.',
+      emergencyContact: { name: 'Maman', phone: '0600000000', mode: 'sms', smsText: 'Urgence : {prenom} fait une crise allergique, adrénaline injectée. Merci d’appeler le 15.' },
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    await DB.put('treatments', { id: 'demo-t1', profileId: 'demo-lea', name: 'Doliprane', dosage: '1 comprimé', startDate: today, endDate: L.ajouterJours(today, 5), lifetime: false, frequency: { type: 'fois', foisParJour: 2 }, reminderTime: '08:00', stockInitial: 20, stockUnite: 'comprimés', note: '', createdAt: today });
+    await DB.put('treatments', { id: 'demo-t2', profileId: 'demo-lea', name: 'Levothyrox', dosage: '50 µg', startDate: '2025-01-01', endDate: '', lifetime: true, frequency: { type: 'quotidien' }, reminderTime: '08:00', stockInitial: null, stockUnite: '', note: '', createdAt: '2025-01-01' });
+    await DB.put('vaccines', { id: 'demo-v1', profileId: 'demo-lea', name: 'ROR', lastDate: '2025-06-01', reminderDate: L.ajouterJours(today, 10), note: '' });
+    await DB.put('contacts', { id: 'demo-c1', profileId: '', name: 'Dr Martin (démo)', specialty: 'Médecin traitant', phone: '01 23 45 67 89', address: '12 rue de la Santé', note: '' });
+    await DB.put('constantes', { id: 'demo-k1', profileId: 'demo-lea', type: 'tension', valeur: '11/7', date: today, heure: '08:30', note: '' });
+    await chargerDonnees();
+    renderTout();
+    toast('Données de démonstration ajoutées (profil « Léa (démo) »).');
+  }
+
+  async function supprimerDonneesDemo() {
+    await DB.creerSnapshot();
+    for (const p of etat.profiles.filter((x) => x.demo)) await DB.supprimerProfilCascade(p.id);
+    await chargerDonnees();
+    renderTout();
+    toast('Données de démonstration supprimées.');
+  }
+
+  async function ouvrirExportQR() {
+    if (typeof QRCode === 'undefined') { toast('Génération de QR indisponible.', true); return; }
+    const data = await DB.exporterTout();
+    const texte = JSON.stringify(data);
+    const CHUNK = 900;
+    const frames = [];
+    for (let i = 0; i < texte.length; i += CHUNK) frames.push(texte.slice(i, i + CHUNK));
+    const payloads = frames.map((f, i) => JSON.stringify({ app: 'OMK-QR', i: i, n: frames.length, data: f }));
+    ouvrirModal('Transfert QR — ' + payloads.length + ' image(s)',
+      '<p>Sur l’autre appareil : Omni-MediKit → Réglages → « Recevoir un transfert », puis scannez chaque image.</p>' +
+      '<div class="qr-zone"><div id="qr-cadre"></div><p class="aide" id="qr-compteur"></p>' +
+      '<div class="ligne"><button type="button" class="petit-bouton" id="qr-prec">◀ Précédent</button><button type="button" class="petit-bouton" id="qr-suiv">Suivant ▶</button></div></div>',
+      null);
+    $('#modal-valider').style.display = 'none';
+    modalForm.addEventListener('close', () => { $('#modal-valider').style.display = ''; }, { once: true });
+    let idx = 0;
+    const montrer = () => {
+      const cadre = $('#qr-cadre');
+      cadre.innerHTML = '';
+      new QRCode(cadre, { text: payloads[idx], width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+      $('#qr-compteur').textContent = 'Image ' + (idx + 1) + ' / ' + payloads.length;
+    };
+    $('#qr-prec').addEventListener('click', () => { idx = (idx - 1 + payloads.length) % payloads.length; montrer(); });
+    $('#qr-suiv').addEventListener('click', () => { idx = (idx + 1) % payloads.length; montrer(); });
+    montrer();
+  }
+
+  async function ouvrirImportQR() {
+    if (!('BarcodeDetector' in window)) {
+      toast('Scan QR indisponible sur ce navigateur : utilisez « Importer un JSON » ou ouvrez le fichier .json depuis le gestionnaire de fichiers.', true);
+      return;
+    }
+    ouvrirModal('Recevoir un transfert QR',
+      '<p>Autorisez la caméra, puis présentez chaque image du transfert (dans n’importe quel ordre).</p>' +
+      '<video id="qr-video" autoplay playsinline muted></video><p class="aide" id="qr-etat">En attente de caméra…</p>', null);
+    $('#modal-valider').style.display = 'none';
+    let stream = null;
+    const fermer = () => { if (stream) stream.getTracks().forEach((t) => t.stop()); };
+    modalForm.addEventListener('close', fermer, { once: true });
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    } catch (e) {
+      const etatEl = $('#qr-etat');
+      if (etatEl) etatEl.textContent = 'Caméra indisponible (' + e.message + '). Utilisez « Importer un JSON ».';
+      return;
+    }
+    const video = $('#qr-video');
+    video.srcObject = stream;
+    const detector = new BarcodeDetector({ formats: ['qr_code'] });
+    const morceaux = new Map();
+    let total = 0;
+    const timer = setInterval(async () => {
+      try {
+        const codes = await detector.detect(video);
+        for (const code of codes) {
+          try {
+            const p = JSON.parse(code.rawValue);
+            if (p && p.app === 'OMK-QR' && Number.isInteger(p.i) && Number.isInteger(p.n) && typeof p.data === 'string') {
+              morceaux.set(p.i, p.data);
+              total = p.n;
+              const etatEl = $('#qr-etat');
+              if (etatEl) etatEl.textContent = 'Reçu ' + morceaux.size + ' / ' + total + ' image(s)…';
+              if (morceaux.size === total) {
+                clearInterval(timer);
+                fermer();
+                const texte = Array.from({ length: total }, (_, i) => morceaux.get(i) || '').join('');
+                fermerModal();
+                importerDepuisTexte(texte, 'transfert-qr.json');
+              }
+            }
+          } catch (e) {}
+        }
+      } catch (e) {}
+    }, 400);
+  }
+
+  async function ouvrirUrgenceVerrou() {
+    const profiles = (await DB.tout('profiles')).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    const treatments = await DB.tout('treatments');
+    let html = '';
+    for (const p of profiles) {
+      const aVie = treatments.filter((t) => t.profileId === p.id && t.lifetime).map((t) => t.name);
+      const ec = p.emergencyContact || {};
+      html += '<article class="ligne-carte"><h3 style="font-size:1.05rem">' + esc(p.name) + '</h3>' +
+        (p.allergies ? '<p><span class="statut danger">⚠ Allergies : ' + esc(p.allergies) + '</span></p>' : '') +
+        (p.criseAllergique ? '<p><strong>Crise allergique :</strong> ' + esc(p.criseAllergique) + '</p>' : '') +
+        (aVie.length ? '<p>Traitements à vie : ' + aVie.map(esc).join(', ') + '</p>' : '') +
+        (ec.phone
+          ? '<p>Contact d’urgence : <strong>' + esc(ec.name || '—') + '</strong> ' + esc(ec.phone) + ' ' +
+            (ec.mode === 'sms'
+              ? '<a class="petit-bouton urgence" href="' + esc(L.lienSms(ec.phone, (ec.smsText || SMS_DEFAUT).replaceAll('{prenom}', p.name))) + '">Envoyer le SMS</a>'
+              : '<a class="petit-bouton urgence" href="' + esc(L.lienTel(ec.phone)) + '">Appeler</a>') + '</p>'
+          : '') +
+        '</article>';
+    }
+    if (!html) html = '<p class="vide">Aucun profil.</p>';
+    $('#urgence-verrou-corps').innerHTML = html;
+    $('#urgence-verrou').hidden = false;
   }
 
   async function init() {
     await gererVerrouillage();
     await chargerDonnees();
     appliquerTheme(etat.theme);
+    appliquerTaille(etat.tailleTexte);
+    const dernierSnapshot = await DB.getSetting('dernierSnapshot', '');
+    if (dernierSnapshot !== L.aujourdhui()) {
+      await DB.creerSnapshot().catch(() => {});
+      await DB.setSetting('dernierSnapshot', L.aujourdhui());
+    }
     renderTout();
     const h = (location.hash || '').replace('#', '');
     showVue(VUES.includes(h) ? h : 'accueil');

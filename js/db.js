@@ -2,13 +2,16 @@
   'use strict';
 
   const DB_NOM = 'omni-medikit';
-  const DB_VERSION = 2;
-  const STORES = ['profiles', 'treatments', 'doses', 'vaccines', 'contacts', 'settings'];
+  const DB_VERSION = 3;
+  const STORES = ['profiles', 'treatments', 'doses', 'vaccines', 'contacts', 'constantes', 'settings'];
+  const SNAPSHOT_STORE = 'snapshots';
+  const SNAPSHOT_MAX = 5;
   const INDEXES = {
     treatments: [['byProfile', 'profileId']],
     doses: [['byProfile', 'profileId'], ['byTreatment', 'treatmentId'], ['byDate', 'date']],
     vaccines: [['byProfile', 'profileId']],
-    contacts: [['byProfile', 'profileId']]
+    contacts: [['byProfile', 'profileId']],
+    constantes: [['byProfile', 'profileId'], ['byDate', 'date']]
   };
 
   let dbPromise = null;
@@ -20,7 +23,7 @@
       req.onupgradeneeded = () => {
         const db = req.result;
         const tx = req.transaction;
-        for (const nom of STORES) {
+        for (const nom of [...STORES, SNAPSHOT_STORE]) {
           const s = db.objectStoreNames.contains(nom) ? tx.objectStore(nom) : db.createObjectStore(nom, { keyPath: 'id' });
           for (const [indexNom, cle] of (INDEXES[nom] || [])) {
             if (!s.indexNames.contains(indexNom)) s.createIndex(indexNom, cle, { unique: false });
@@ -88,7 +91,7 @@
 
     async function supprimerProfilCascade(id) {
     await supprimer('profiles', id);
-    for (const nom of ['treatments', 'vaccines', 'contacts', 'doses']) {
+    for (const nom of ['treatments', 'vaccines', 'contacts', 'doses', 'constantes']) {
       for (const o of await parIndex(nom, 'byProfile', id)) await supprimer(nom, o.id);
     }
   }
@@ -107,6 +110,36 @@
       exporteLe: new Date().toISOString(),
       data
     };
+  }
+
+  async function creerSnapshot() {
+    const data = {};
+    for (const nom of STORES) data[nom] = await tout(nom);
+    const snap = { id: 'snap-' + Date.now(), date: new Date().toISOString(), data: data };
+    await put(SNAPSHOT_STORE, snap);
+    const liste = await listerSnapshots();
+    for (const s of liste.slice(SNAPSHOT_MAX)) await supprimer(SNAPSHOT_STORE, s.id);
+    return snap;
+  }
+
+  async function listerSnapshots() {
+    const liste = await tout(SNAPSHOT_STORE);
+    return liste.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  }
+
+  async function restaurerSnapshot(id) {
+    const snap = await obtenir(SNAPSHOT_STORE, id);
+    if (!snap || !snap.data) throw new Error('Snapshot introuvable.');
+    for (const nom of STORES) {
+      if (!Array.isArray(snap.data[nom])) throw new Error('Snapshot invalide : section « ' + nom + ' » absente.');
+    }
+    for (const nom of STORES) await supprimerTout(nom);
+    for (const nom of STORES) {
+      for (const objet of snap.data[nom]) {
+        if (!objet || typeof objet.id !== 'string') throw new Error('Snapshot invalide : enregistrement sans identifiant dans « ' + nom + ' ».');
+        await put(nom, objet);
+      }
+    }
   }
 
   async function importerTout(json) {
@@ -128,7 +161,8 @@
   const DB = {
     STORES, ouvrir, tout, obtenir, put, supprimer, supprimerTout, parIndex,
     getSetting, setSetting, supprimerProfilCascade, supprimerTraitementCascade,
-    exporterTout, importerTout
+    exporterTout, importerTout,
+    creerSnapshot, listerSnapshots, restaurerSnapshot
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = DB;

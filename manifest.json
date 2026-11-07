@@ -1,7 +1,7 @@
 {
   "name": "Omni-MediKit",
   "short_name": "Omni-MediKit",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Suivi de traitements médicaux familial, 100 % hors ligne. Profils, médicaments, vaccins, contacts médicaux et urgences, stockés localement sur l'appareil.",
   "lang": "fr",
   "dir": "ltr",
