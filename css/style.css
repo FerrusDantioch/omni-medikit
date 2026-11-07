@@ -60,6 +60,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
@@ -113,7 +114,6 @@ p { margin: 0; }
 
 .page { max-width: 1080px; margin: 0 auto; padding-inline: 16px; }
 section.vue { padding-block: 40px 64px; }
-section.vue[hidden] { display: none; }
 .intro-section { display: grid; gap: 12px; margin-bottom: 32px; max-width: 65ch; }
 .intro-section p { color: var(--discret); }
 
