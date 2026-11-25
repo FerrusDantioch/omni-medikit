@@ -19,6 +19,7 @@ jobs:
 
       - name: Syntaxe des fichiers JS
         run: |
+          node --check js/theme-init.js
           node --check js/logique.js
           node --check js/db.js
           node --check js/app.js
@@ -26,9 +27,11 @@ jobs:
           node --check tools/make-icons.js
           node --check tools/test-logique.js
           node --check tools/test-ui.js
+          node --check tools/e2e/e2e.mjs
 
       - name: Manifeste valide
-        run: node -e "const m=require('./manifest.json'); if(m.name!=='Omni-MediKit'||m.short_name!=='Omni-MediKit') process.exit(1); if(!m.version) process.exit(1); console.log('manifest OK, version', m.version)"
+        run: |
+          node -e "const fs=require('fs'), m=require('./manifest.json'), sw=fs.readFileSync('sw.js','utf8'), app=fs.readFileSync('js/app.js','utf8'); if(m.name!=='Omni-MediKit'||m.short_name!=='Omni-MediKit') process.exit(1); if(m.id!=='/omni-medikit/'||m.version!=='1.3.0') process.exit(1); if(!m.icons.some(i=>i.src==='icons/icon-maskable-192.png'&&i.purpose==='maskable')) process.exit(1); for(const i of m.icons){if(!fs.existsSync(i.src)) process.exit(1);} if(!sw.includes(\"VERSION = '\"+m.version+\"'\")||!app.includes(\"VERSION_APP = '\"+m.version+\"'\")) process.exit(1); console.log('manifest OK, id', m.id, 'version', m.version)"
 
       - name: Tests unitaires (logique)
         run: node tools/test-logique.js
@@ -39,7 +42,7 @@ jobs:
       - name: Icônes à jour
         run: |
           node tools/make-icons.js
-          if ! git diff --exit-code -- icons/ > /dev/null; then
+          if ! git diff --exit-code -- icons/ > /dev/null || [ -n "$(git status --porcelain -- icons/)" ]; then
             echo 'Les icônes ne sont pas à jour : régénérez-les avec "node tools/make-icons.js" et committez le résultat.'
             exit 1
           fi

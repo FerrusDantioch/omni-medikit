@@ -72,6 +72,14 @@ ok(!v.ok && v.erreurs.reminderDate, 'rappel avant injection → erreur');
 v = L.validerContact({ name: 'Dr Martin', phone: '' });
 ok(v.ok, 'contact sans téléphone → ok (téléphone facultatif)');
 
+console.log('Tutoiement des messages de validation :');
+v = L.validerTraitement({ name: 'X', startDate: '2026-03-01', endDate: '', lifetime: false, frequency: { type: 'quotidien' } });
+ok(v.erreurs.endDate.includes('coche ') && !/cochez/i.test(v.erreurs.endDate), 'erreur endDate au tutoiement');
+v = L.validerTraitement({ name: 'X', startDate: '2026-03-01', endDate: '2026-03-10', lifetime: false, frequency: { type: 'fois', foisParJour: 99 } });
+ok(v.erreurs.frequence.includes('Indique ') && !/indiquez/i.test(v.erreurs.frequence), 'erreur fréquence fois au tutoiement');
+v = L.validerTraitement({ name: 'X', startDate: '2026-03-01', endDate: '2026-03-10', lifetime: false, frequency: { type: 'jours', jours: [] } });
+ok(v.erreurs.frequence.includes('Coche ') && !/cochez/i.test(v.erreurs.frequence), 'erreur fréquence jours au tutoiement');
+
 console.log('Liens natifs :');
 ok(L.lienTel('01 23 45 67 89') === 'tel:+0123456789'.replace('+0', '0') || L.lienTel('01 23 45 67 89') === 'tel:0123456789', 'tel: nettoyé → ' + L.lienTel('01 23 45 67 89'));
 ok(L.lienSms('0612345678', 'Bonjour é').startsWith('sms:0612345678?&body='), 'sms: avec body encodé');
