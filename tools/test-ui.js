@@ -54,6 +54,7 @@ function makeEl(id) {
     id: id || '',
     innerHTML: '', textContent: '', value: '', hidden: false, className: '',
     dataset: {}, style: {}, attrs: {},
+    classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     children: [],
     setAttribute(k, v) { this.attrs[k] = String(v); },
     getAttribute(k) { return this.attrs[k]; },
@@ -172,7 +173,7 @@ const DB = require(path.join(ROOT, 'js/db.js'));
   ok(sectionEls.find((s) => s.id === 'vue-accueil').hidden === false, 'vue accueil visible');
   ok($('toast') !== undefined, 'toast présent');
   ok($('bandeau-mise-a-jour').hidden === true, 'bandeau mise à jour caché sans nouvelle version');
-  ok($('version-app').textContent === 'v1.2.0', 'version affichée: ' + $('version-app').textContent);
+  ok($('version-app').textContent === 'v1.3.0', 'version affichée: ' + $('version-app').textContent);
   ok(duo.includes('Allergies') && duo.includes('Arachides') && duo.includes('crise allergique'), 'alerte allergies + crise affichée dans le panneau');
   ok(duo.includes('stock : <strong>19'), 'stock décompté (20 - 1 prise = 19): ' + (duo.match(/stock : <strong>\d+/) || ['?'])[0]);
   ok(duo.includes('Observance sur 7 jours'), 'observance 7 j affichée');
@@ -186,11 +187,27 @@ const DB = require(path.join(ROOT, 'js/db.js'));
   ok(html.includes('id="recherche-traitements"') && html.includes('id="recherche-contacts"'), 'champs de recherche présents');
   ok(html.includes('id="opt-rappels"') && html.includes('id="btn-verrou"'), 'blocs Rappels et Verrouillage présents');
   const man = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
-  ok(man.version === '1.2.0' && Array.isArray(man.shortcuts) && man.shortcuts.length === 2, 'manifest v1.2.0 + 2 raccourcis');
+  ok(man.version === '1.3.0' && man.id === '/omni-medikit/' && Array.isArray(man.shortcuts) && man.shortcuts.length === 2, 'manifest v1.3.0 + id + 2 raccourcis');
   ok(Array.isArray(man.file_handlers) && man.share_target, 'file_handlers + share_target présents');
   ok(man.icons.some((i) => i.sizes === '384x384'), 'icône 384 présente');
+  ok(man.icons.some((i) => i.src === 'icons/icon-maskable-192.png' && i.sizes === '192x192' && i.purpose === 'maskable'), 'icône maskable 192 présente dans manifest');
+  ok(fs.existsSync(path.join(ROOT, 'icons/icon-maskable-192.png')) && fs.existsSync(path.join(ROOT, 'icons/apple-touch-icon.png')), 'fichiers icônes maskable-192 et apple-touch-icon présents');
+  ok(html.includes('href="icons/apple-touch-icon.png"'), 'apple-touch-icon.png référencée dans index.html');
   const sw = fs.readFileSync(path.join(ROOT, 'js/../sw.js'), 'utf8');
   ok(sw.includes('notificationclick') && sw.includes('launchQueue') && sw.includes('demander-fichier'), 'sw.js : notifications + import fichier (launchQueue)');
+  ok(!html.includes('fonts.googleapis.com') && !html.includes('fonts.gstatic.com'), 'zéro Google Fonts dans index.html');
+  ok(!sw.includes('fonts.googleapis.com') && !sw.includes('fonts.gstatic.com'), 'zéro Google Fonts dans sw.js');
+  ok(html.includes('http-equiv="Content-Security-Policy"') && html.includes("img-src 'self' data:"), 'CSP stricte présente avec img-src self data:');
+  ok(html.includes('src="js/theme-init.js"') && fs.existsSync(path.join(ROOT, 'js/theme-init.js')), 'js/theme-init.js externalisé et présent');
+  ok(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(html), 'zéro script inline dans index.html');
+  ok(!/\sstyle\s*=/i.test(html), 'zéro attribut style= dans index.html');
+  const appJs = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  ok(!/\sstyle\s*=/i.test(appJs), 'zéro attribut style= dans js/app.js');
+  ok(/<h1\b[^>]*>/.test(html), 'balise <h1> structurante présente');
+  const texteVisible = html.replace(/<[^>]+>/g, ' ');
+  ok(!/\b(?<!rendez-)vous\b|\bvotre\b|\bvos\b|\b(ouvrez|entrez|gérez|configurez|choisissez|exportez|réimportez|activez|protégez|touchez|appelez)\b/i.test(texteVisible), 'tutoiement respecté dans index.html');
+  ok(html.includes('CC BY-NC-ND 4.0') && html.includes('Ferrus Dantioch') && html.includes('omni-systeme.choking513@passmail.net'), 'mentions licence CC BY-NC-ND 4.0, Ferrus Dantioch et contact présentes');
+  ok(sw.includes("VERSION = '1.3.0'") && sw.includes('caches.open(CACHE)') && sw.includes('503') && sw.includes('js/theme-init.js') && sw.includes('icons/icon-maskable-192.png') && sw.includes('icons/apple-touch-icon.png'), 'sw.js v1.3.0 durci (caches.open, 503, assets complets)');
   const db = fs.readFileSync(path.join(ROOT, 'js/db.js'), 'utf8');
   ok(db.includes('DB_VERSION = 3') && db.includes('byTreatment') && db.includes('SNAPSHOT_STORE'), 'db.js v3 : index + snapshots');
   ok(html.includes('btn-mise-a-jour') && html.includes('btn-verifier-maj'), 'boutons « Mettre à jour » présents (bandeau + réglages)');

@@ -176,18 +176,20 @@ for (const [name, target, scale, full] of [
   ['icon-48.png', 48, 1, false],
   ['icon-32.png', 32, 1, false],
   ['icon-maskable-512.png', 512, 0.72, true],
+  ['icon-maskable-192.png', 192, 0.72, true],
+  ['apple-touch-icon.png', 180, 1, true],
 ]) {
   const c = draw(512 * S, scale, full);
   border(c);
   const img = c.downsample(512 * S / target);
   const png = encodePNG(img.width, img.height, img.data);
   fs.writeFileSync(path.join(OUT, name), png);
-  generes[target] = png;
+  generes[name] = png;
   console.log('écrit', name, img.width + 'x' + img.height);
 }
 fs.writeFileSync(path.join(OUT, 'favicon.ico'), encodeICO([
-  { size: 48, png: generes[48] },
-  { size: 32, png: generes[32] },
+  { size: 48, png: generes['icon-48.png'] },
+  { size: 32, png: generes['icon-32.png'] },
 ]));
 console.log('écrit favicon.ico (48+32)');
 

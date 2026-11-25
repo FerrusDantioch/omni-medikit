@@ -3,28 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Omni-MediKit</title>
   <meta name="description" content="Omni-MediKit — suivi de traitements médicaux familial, PWA 100 % hors ligne. Toutes les données restent sur l'appareil.">
   <meta name="theme-color" content="#a777ff">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/favicon.ico" sizes="32x32 48x48">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Omni-MediKit">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;700;800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@500;700&display=swap">
   <link rel="stylesheet" href="css/style.css">
-  <script>try{var t=localStorage.getItem('omni-medikit-theme');if(t)document.documentElement.dataset.theme=t;var z=localStorage.getItem('omni-medikit-taille');if(z)document.documentElement.dataset.taille=z;}catch(e){}</script>
+  <script src="js/theme-init.js"></script>
 </head>
 <body>
   <div id="verrou" hidden>
     <div class="verrou-carte">
       <img src="icons/icon.svg" alt="" width="48" height="48">
       <h2>Omni-MediKit est verrouillé</h2>
-      <p>Entrez le code pour ouvrir l'application sur cet appareil.</p>
+      <p>Entre le code pour ouvrir l'application sur cet appareil.</p>
       <div class="champ">
         <span>Code</span>
         <input type="password" id="verrou-code" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off">
@@ -36,9 +34,9 @@
   </div>
 
   <div id="urgence-verrou" hidden>
-    <div class="verrou-carte" style="max-width:560px;max-height:82vh;overflow:auto;text-align:left">
+    <div class="verrou-carte verrou-urgence-carte">
       <h2>Urgences — infos essentielles</h2>
-      <p class="aide">Lecture seule, sans déverrouiller. En cas d'urgence vitale, appelez d'abord le 15, le 18 ou le 112.</p>
+      <p class="aide">Lecture seule, sans déverrouiller. En cas d'urgence vitale, appelle d'abord le 15, le 18 ou le 112.</p>
       <div id="urgence-verrou-corps" class="liste"></div>
       <button type="button" class="bouton" id="urgence-verrou-fermer">Fermer</button>
     </div>
@@ -46,10 +44,12 @@
 
   <header class="entete">
     <div class="entete-in">
-      <a class="marque" href="#" id="marque" aria-label="Omni-MediKit, retour à l'accueil">
-        <img src="icons/icon.svg" alt="" width="34" height="34">
-        OMNI-MEDIKIT
-      </a>
+      <h1 class="marque-titre">
+        <a class="marque" href="#" id="marque" aria-label="Omni-MediKit, retour à l'accueil">
+          <img src="icons/icon.svg" alt="" width="34" height="34">
+          OMNI-MEDIKIT
+        </a>
+      </h1>
       <nav class="nav" aria-label="Sections de l'application">
         <button type="button" data-vue="accueil" aria-current="page">Accueil</button>
         <button type="button" data-vue="traitements">Traitements</button>
@@ -67,7 +67,7 @@
 
     <section class="vue" id="vue-accueil" aria-labelledby="titre-accueil">
       <div id="bandeau-mise-a-jour" class="encart" role="status" hidden>
-        <p><strong>Une nouvelle version d'Omni-MediKit est prête.</strong> Vos données restent telles quelles.</p>
+        <p><strong>Une nouvelle version d'Omni-MediKit est prête.</strong> Tes données restent telles quelles.</p>
         <div class="ligne">
           <button type="button" id="btn-mise-a-jour" class="bouton">Mettre à jour</button>
         </div>
@@ -107,9 +107,9 @@
       <div class="intro-section">
         <p class="etiquette">Médicaments</p>
         <h2 id="titre-traitements">Traitements</h2>
-        <p>Gérez les traitements de chaque personne : programmation, prises du jour et historique.</p>
+        <p>Gère les traitements de chaque personne : programmation, prises du jour et historique.</p>
       </div>
-      <div class="selecteurs" style="margin-bottom:20px">
+      <div class="selecteurs selecteurs-espace">
         <div class="champ">
           <span id="label-filtre-traitements">Afficher</span>
           <select id="filtre-traitements" aria-labelledby="label-filtre-traitements"></select>
@@ -130,7 +130,7 @@
         <h2 id="titre-vaccins">Vaccins</h2>
         <p>Dernière injection et prochain rappel, par personne.</p>
       </div>
-      <div class="selecteurs" style="margin-bottom:20px">
+      <div class="selecteurs selecteurs-espace">
         <div class="champ">
           <span id="label-filtre-vaccins">Afficher</span>
           <select id="filtre-vaccins" aria-labelledby="label-filtre-vaccins"></select>
@@ -146,7 +146,7 @@
         <h2 id="titre-contacts">Contacts médicaux</h2>
         <p>Médecins et professionnels de santé, globaux ou par personne.</p>
       </div>
-      <div class="selecteurs" style="margin-bottom:20px">
+      <div class="selecteurs selecteurs-espace">
         <div class="champ">
           <span id="label-filtre-contacts">Afficher</span>
           <select id="filtre-contacts" aria-labelledby="label-filtre-contacts"></select>
@@ -168,9 +168,9 @@
         <p>Numéros d'urgence français, appel direct en un clic. Aucun service tiers : les liens <span class="mono">tel:</span> et <span class="mono">sms:</span> ouvrent l'application native de l'appareil.</p>
       </div>
       <div class="urgences" id="liste-urgences"></div>
-      <div class="reglage" style="margin-top:24px">
+      <div class="reglage reglage-urgence">
         <h3>Contact d'urgence par personne</h3>
-        <p>Configurez-le dans l'onglet <strong>Profils</strong> : appel direct ou SMS pré-rédigé (modifiable).</p>
+        <p>Configure-le dans l'onglet <strong>Profils</strong> : appel direct ou SMS pré-rédigé (modifiable).</p>
         <div id="contacts-urgence" class="liste"></div>
       </div>
     </section>
@@ -181,7 +181,7 @@
         <h2 id="titre-constantes">Constantes</h2>
         <p>Tension, poids, température, glycémie — par personne, avec historique.</p>
       </div>
-      <div class="selecteurs" style="margin-bottom:20px">
+      <div class="selecteurs selecteurs-espace">
         <div class="champ">
           <span id="label-filtre-constantes">Afficher</span>
           <select id="filtre-constantes" aria-labelledby="label-filtre-constantes"></select>
@@ -198,7 +198,7 @@
         <h2 id="titre-profils">Profils</h2>
         <p>Plusieurs personnes suivies dans la même application. Les données restent locales, sur cet appareil.</p>
       </div>
-      <div class="selecteurs" style="margin-bottom:20px">
+      <div class="selecteurs selecteurs-espace">
         <button type="button" class="bouton" id="btn-ajout-profil">+ Nouveau profil</button>
       </div>
       <div id="liste-profils" class="cartes"></div>
@@ -212,7 +212,7 @@
 
       <div class="reglage">
         <h3>Mise à jour</h3>
-        <p>Omni-MediKit fonctionne hors ligne grâce à une copie enregistrée sur l'appareil. Touchez « Mettre à jour » pour chercher une nouvelle version et l'appliquer tout de suite — vos données restent telles quelles, rien ne change sans votre accord.</p>
+        <p>Omni-MediKit fonctionne hors ligne grâce à une copie enregistrée sur l'appareil. Touche « Mettre à jour » pour chercher une nouvelle version et l'appliquer tout de suite — tes données restent telles quelles, rien ne change sans ton accord.</p>
         <div class="ligne">
           <button type="button" class="bouton" id="btn-verifier-maj">Mettre à jour</button>
           <span class="aide" id="info-maj"></span>
@@ -222,13 +222,13 @@
 
       <div class="reglage">
         <h3>Apparence</h3>
-        <p>Choisissez le thème de l'application. Le choix est mémorisé localement et s'applique immédiatement, sans recharger.</p>
+        <p>Choisis le thème de l'application. Le choix est mémorisé localement et s'applique immédiatement, sans recharger.</p>
         <div class="modes" role="group" aria-label="Thème de l'application" id="choix-theme">
           <button type="button" data-theme="charte" aria-pressed="true">Thème omni-systeme</button>
           <button type="button" data-theme="sombre" aria-pressed="false">Sombre</button>
           <button type="button" data-theme="clair" aria-pressed="false">Clair</button>
         </div>
-        <p style="margin-top:10px">Taille du texte :</p>
+        <p class="sous-titre-reglage">Taille du texte :</p>
         <div class="modes" role="group" aria-label="Taille du texte" id="choix-taille">
           <button type="button" data-taille="normal" aria-pressed="true">Normal</button>
           <button type="button" data-taille="grand" aria-pressed="false">Grand</button>
@@ -238,10 +238,10 @@
 
       <div class="reglage">
         <h3>Données</h3>
-        <p>Toutes les données (profils, traitements, prises, vaccins, contacts, constantes, réglages) sont stockées uniquement sur cet appareil, dans IndexedDB. Exportez-les en JSON pour une sauvegarde manuelle, ou réimportez une sauvegarde (chaque enregistrement est validé avant). Vous pouvez aussi ouvrir un fichier <span class="mono">.json</span> directement depuis le gestionnaire de fichiers de l’appareil, ou transférer les données vers un autre appareil par QR code.</p>
+        <p>Toutes les données (profils, traitements, prises, vaccins, contacts, constantes, réglages) sont stockées uniquement sur cet appareil, dans IndexedDB. Exporte-les en JSON pour une sauvegarde manuelle, ou réimporte une sauvegarde (chaque enregistrement est validé avant). Tu peux aussi ouvrir un fichier <span class="mono">.json</span> directement depuis le gestionnaire de fichiers de l’appareil, ou transférer les données vers un autre appareil par QR code.</p>
         <div class="ligne">
           <button type="button" class="bouton" id="btn-exporter">Exporter en JSON</button>
-          <label class="bouton secondaire" for="input-import" style="cursor:pointer">Importer un JSON…</label>
+          <label class="bouton secondaire" for="input-import">Importer un JSON…</label>
           <input type="file" id="input-import" accept="application/json,.json" hidden>
           <button type="button" class="bouton secondaire" id="btn-pdf">Fiche PDF (imprimer)</button>
         </div>
@@ -254,17 +254,17 @@
           <button type="button" class="bouton danger" id="btn-suppr-demo" hidden>Supprimer les données de démonstration</button>
         </div>
         <p class="aide" id="info-donnees"></p>
-        <h3 style="margin-top:8px">Snapshots automatiques</h3>
+        <h3 class="titre-snapshots">Snapshots automatiques</h3>
         <p class="aide">Un snapshot des données est enregistré automatiquement chaque jour (et avant chaque import ou suppression), les 5 plus récents sont conservés.</p>
         <div class="ligne">
           <button type="button" class="petit-bouton" data-action="creer-snapshot">Créer un snapshot maintenant</button>
         </div>
-        <div id="liste-snapshots" class="liste" style="margin-top:10px"></div>
+        <div id="liste-snapshots" class="liste liste-snapshots"></div>
       </div>
 
       <div class="reglage">
         <h3>Rappels de prises</h3>
-        <p>Activez les rappels pour recevoir une notification à l'heure de rappel de chaque traitement (champ « Heure de rappel » du formulaire). L'autorisation du navigateur est demandée à l'activation ; les rappels fonctionnent quand l'application est ouverte ou récemment en arrière-plan.</p>
+        <p>Active les rappels pour recevoir une notification à l'heure de rappel de chaque traitement (champ « Heure de rappel » du formulaire). L'autorisation du navigateur est demandée à l'activation ; les rappels fonctionnent quand l'application est ouverte ou récemment en arrière-plan.</p>
         <div class="checks">
           <label><input type="checkbox" id="opt-rappels"> Activer les rappels de prises (notifications)</label>
         </div>
@@ -273,7 +273,7 @@
 
       <div class="reglage">
         <h3>Verrouillage</h3>
-        <p>Optionnel : protégez l'ouverture d'Omni-MediKit sur cet appareil par un code à 4 chiffres. Les données restent stockées localement ; le code bloque seulement l'accès à l'application.</p>
+        <p>Optionnel : protège l'ouverture d'Omni-MediKit sur cet appareil par un code à 4 chiffres. Les données restent stockées localement ; le code bloque seulement l'accès à l'application.</p>
         <div class="ligne">
           <button type="button" class="bouton secondaire" id="btn-verrou">Activer le verrouillage</button>
           <button type="button" class="bouton danger" id="btn-desactiver-verrou" hidden>Désactiver le verrouillage</button>
@@ -289,8 +289,9 @@
           <p>Omni-MediKit a été développée par <strong>Ferrus Dantioch</strong> avec l'aide de l'intelligence artificielle.</p>
         </div>
         <p>Découvrir mes autres projets : <a href="https://ferrusdantioch.github.io/omni-systeme/" target="_blank" rel="noopener">le portfolio omni-systeme (ferrusdantioch.github.io/omni-systeme)</a> · <a href="https://github.com/FerrusDantioch/omni-systeme" target="_blank" rel="noopener">dépôt GitHub omni-systeme</a>.</p>
-        <p>Code sous licence <strong>Creative Commons BY-NC-ND 4.0</strong> (© 2026 Ferrus Dantioch) — voir le fichier <span class="mono">LICENSE</span> du dépôt <a href="https://github.com/FerrusDantioch/omni-medikit" target="_blank" rel="noopener">omni-medikit</a>.</p>
-        <p class="aide">Avertissement : Omni-MediKit est un outil de suivi personnel, pas un dispositif médical. En cas d'urgence, appelez le 15, le 18 ou le 112.</p>
+        <p>Code sous licence <strong>Creative Commons Attribution - Pas d'Utilisation Commerciale - Pas de Modification 4.0 International (CC BY-NC-ND 4.0 / Attribution-NonCommercial-NoDerivatives 4.0 International)</strong> (© 2026 Ferrus Dantioch) : attribution à Ferrus Dantioch, usage non commercial uniquement, pas d'œuvres dérivées ou modifiées sans autorisation — voir le fichier <span class="mono">LICENSE</span> du dépôt <a href="https://github.com/FerrusDantioch/omni-medikit" target="_blank" rel="noopener">omni-medikit</a>.</p>
+        <p>Contact : <a href="mailto:omni-systeme.choking513@passmail.net">omni-systeme.choking513@passmail.net</a></p>
+        <p class="aide">Avertissement : Omni-MediKit est un outil de suivi personnel, pas un dispositif médical. En cas d'urgence, appelle le 15, le 18 ou le 112.</p>
       </div>
     </section>
 
@@ -300,13 +301,13 @@
 
   <footer class="pied">
     <p><strong>Omni-MediKit</strong> — suivi de traitement médical hors ligne. Données 100&nbsp;% locales.</p>
-    <p>Développée par Ferrus Dantioch avec l'aide de l'IA · <a href="https://ferrusdantioch.github.io/omni-systeme/" target="_blank" rel="noopener">Portfolio omni-systeme</a> · Licence CC BY-NC-ND 4.0</p>
+    <p>Développée par Ferrus Dantioch avec l'aide de l'IA · <a href="https://ferrusdantioch.github.io/omni-systeme/" target="_blank" rel="noopener">Portfolio omni-systeme</a> · Licence CC BY-NC-ND 4.0 (Attribution - Pas d'Utilisation Commerciale - Pas de Modification) · Contact : <a href="mailto:omni-systeme.choking513@passmail.net">omni-systeme.choking513@passmail.net</a></p>
   </footer>
 
   <dialog id="modal" aria-labelledby="modal-titre">
     <form method="dialog" class="modal-in" id="modal-form" novalidate>
       <h3 id="modal-titre"></h3>
-      <div id="modal-corps" style="display:grid;gap:14px"></div>
+      <div id="modal-corps"></div>
       <div class="modal-pied">
         <button type="button" class="bouton secondaire" id="modal-annuler">Annuler</button>
         <button type="submit" class="bouton" id="modal-valider">Enregistrer</button>

@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const CACHE = 'omni-medikit-' + VERSION;
 const PREFIX = 'omni-medikit-';
 const COQUILLE = [
@@ -8,6 +8,7 @@ const COQUILLE = [
   'index.html',
   'manifest.json',
   'css/style.css',
+  'js/theme-init.js',
   'js/db.js',
   'js/logique.js',
   'js/app.js',
@@ -17,7 +18,9 @@ const COQUILLE = [
   'icons/icon-192.png',
   'icons/icon-384.png',
   'icons/icon-512.png',
-  'icons/icon-maskable-512.png'
+  'icons/icon-maskable-192.png',
+  'icons/icon-maskable-512.png',
+  'icons/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -80,30 +83,35 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
 
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      caches.match('index.html').then((hit) => hit || fetch(req).then((rep) => {
-        const copie = rep.clone();
-        caches.open(CACHE).then((cache) => cache.put('index.html', copie));
-        return rep;
-      }).catch(() => caches.match('index.html')))
-    );
-    return;
-  }
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    const exact = await cache.match(req);
+    if (exact) return exact;
 
-  event.respondWith(
-    caches.match(req, { ignoreSearch: true }).then((hit) => {
-      if (hit) return hit;
-      return fetch(req).then((rep) => {
-        if (rep && rep.ok && (req.url.startsWith(self.location.origin) ||
-            req.url.startsWith('https://fonts.googleapis.com') ||
-            req.url.startsWith('https://fonts.gstatic.com'))) {
-          const copie = rep.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copie));
-        }
-        return rep;
-      }).catch(() => caches.match(req));
-    })
-  );
+    if (req.mode !== 'navigate') {
+      const sansQuery = await cache.match(req, { ignoreSearch: true });
+      if (sansQuery) return sansQuery;
+    }
+
+    try {
+      const rep = await fetch(req);
+      if (rep && rep.ok) {
+        await cache.put(req, rep.clone()).catch(() => {});
+      }
+      return rep;
+    } catch {
+      if (req.mode === 'navigate') {
+        const fallback = await cache.match('index.html');
+        if (fallback) return fallback;
+      }
+      return new Response('Ressource indisponible hors ligne.', {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      });
+    }
+  })());
 });
