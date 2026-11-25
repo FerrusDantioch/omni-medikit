@@ -101,6 +101,7 @@ p { margin: 0; }
   max-width: 1080px; margin: 0 auto; padding: 10px 16px;
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
 }
+.marque-titre { font-size: 1.0625rem; font-weight: 800; margin: 0; line-height: 1.15; }
 .marque {
   display: flex; align-items: center; gap: 10px; text-decoration: none;
   color: var(--texte); font-family: var(--f-titre); font-weight: 800; letter-spacing: .04em;
@@ -143,6 +144,8 @@ section.vue { padding-block: 40px 64px; }
 .petit-bouton.pris { color: var(--succes); border-color: var(--succes); }
 .petit-bouton.urgence { color: var(--danger); border-color: var(--danger); font-weight: 700; }
 .petit-bouton.urgence:hover { background: var(--danger); color: #fff; }
+.petit-bouton.danger { color: var(--danger); border-color: var(--danger); }
+.petit-bouton.danger:hover { background: var(--danger); color: #fff; }
 
 /* Cartes et listes */
 .carte {
@@ -153,12 +156,17 @@ section.vue { padding-block: 40px 64px; }
 }
 .carte h3 { color: var(--texte); }
 .carte p { color: var(--discret); font-size: .97rem; }
+.carte-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ligne { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.ligne-serree { gap: 8px; }
+.ligne-droite { justify-content: flex-end; }
 .cartes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
 .liste { display: grid; gap: 12px; }
 .ligne-carte {
   background: var(--surface); border: 1px solid var(--trait); border-radius: 14px;
   padding: 18px 20px; display: grid; gap: 10px; min-width: 0;
 }
+.ligne-carte > h3 { font-size: 1.05rem; }
 .ligne-carte .titre { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .ligne-carte .titre h3 { font-size: 1.1rem; }
 .ligne-carte .meta { color: var(--discret); font-size: .92rem; }
@@ -197,6 +205,7 @@ input[type="tel"], input[type="url"], input[type="search"], select, textarea {
   padding: 12px 14px; min-height: 48px; width: 100%;
 }
 textarea { min-height: 96px; resize: vertical; }
+input[type="number"].champ-fois { width: 5em; min-height: 40px; }
 input:focus, select:focus, textarea:focus { border-color: var(--primaire); }
 fieldset { border: 1px solid var(--trait); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
 .checks { display: flex; gap: 8px 16px; flex-wrap: wrap; }
@@ -215,6 +224,7 @@ dialog {
 dialog::backdrop { background: rgba(0, 0, 0, .6); }
 .modal-in { padding: 22px; display: grid; gap: 16px; }
 .modal-in h3 { font-size: 1.4rem; }
+#modal-corps { display: grid; gap: 14px; }
 .modal-pied { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
 /* Toast */
@@ -231,6 +241,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .6); }
 .accueil-tete { display: grid; gap: 14px; margin-bottom: 24px; }
 .accueil-tete .date { color: var(--discret); font-size: 1.05rem; }
 .selecteurs { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+.selecteurs-espace { margin-bottom: 20px; }
 .selecteurs .champ { min-width: min(100%, 240px); }
 .duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .panel-profil { background: var(--surface); border: 1px solid var(--trait); border-radius: 14px; padding: 20px; display: grid; gap: 16px; align-content: start; }
@@ -253,6 +264,10 @@ dialog::backdrop { background: rgba(0, 0, 0, .6); }
 .reglage h3 { font-size: 1.1rem; }
 .reglage p { color: var(--discret); font-size: .97rem; }
 .reglage .ligne { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.reglage-urgence { margin-top: 24px; }
+.sous-titre-reglage { margin-top: 10px; }
+.titre-snapshots { margin-top: 8px; }
+.liste-snapshots { margin-top: 10px; }
 
 /* Encarts et mention IA (charte .encart / .ia) */
 .encart { padding: 18px 20px; border: 1px solid var(--trait); border-radius: 12px; color: var(--discret); font-size: .95rem; max-width: 72ch; display: grid; gap: 8px; }
@@ -295,6 +310,8 @@ footer.pied { border-top: 1px solid var(--trait); padding-block: 32px 48px; colo
 .verrou-carte img { border-radius: 10px; }
 .verrou-carte .champ { width: 100%; text-align: left; }
 .verrou-carte .bouton { width: 100%; }
+.verrou-carte.verrou-urgence-carte { max-width: 560px; max-height: 82vh; overflow: auto; text-align: left; }
+.note-impression { margin-top: 12px; font-size: .85rem; }
 
 /* Tables (constantes, fiche d'impression) */
 table.table { width: 100%; border-collapse: collapse; font-size: .95rem; }

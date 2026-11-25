@@ -10,7 +10,7 @@
     { nom: 'Pompiers', num: '18', desc: 'Incendie, accident, secours à personne.', liens: [{ label: 'Appeler le 18', href: 'tel:18' }] },
     { nom: 'Numéro d’urgence européen', num: '112', desc: 'Depuis un mobile, en France comme dans toute l’UE.', liens: [{ label: 'Appeler le 112', href: 'tel:112' }] },
     { nom: 'Sourds et malentendants', num: '114', desc: 'Accessible par SMS, fax, visiophonie ou appel.', liens: [{ label: 'Appeler le 114', href: 'tel:114' }, { label: 'SMS 114', href: 'sms:114?&body=' }] },
-    { nom: 'Centre antipoison', num: '15', desc: 'Intoxication : appelez le 15 ou le 112, le SAMU oriente vers le centre antipoison régional.', liens: [{ label: 'Appeler le 15', href: 'tel:15' }] }
+    { nom: 'Centre antipoison', num: '15', desc: 'Intoxication : appelle le 15 ou le 112, le SAMU oriente vers le centre antipoison régional.', liens: [{ label: 'Appeler le 15', href: 'tel:15' }] }
   ];
 
   const SMS_DEFAUT = 'Urgence : {prenom} a besoin d’aide immédiate. Merci d’appeler les secours (15).';
@@ -265,7 +265,7 @@
     $('#panels-duo').hidden = !duo;
 
     if (!etat.profiles.length) {
-      $('#panels').innerHTML = '<div class="encart"><p>Aucun profil pour l’instant. Créez un premier profil dans l’onglet <strong>Profils</strong> pour commencer le suivi.</p></div>';
+      $('#panels').innerHTML = '<div class="encart"><p>Aucun profil pour l’instant. Crée un premier profil dans l’onglet <strong>Profils</strong> pour commencer le suivi.</p></div>';
       $('#panels-duo').innerHTML = '';
       return;
     }
@@ -282,14 +282,14 @@
   function renderProfils() {
     const el = $('#liste-profils');
     if (!etat.profiles.length) {
-      el.innerHTML = '<div class="encart"><p>Aucun profil. Créez-en un pour suivre une personne.</p></div>';
+      el.innerHTML = '<div class="encart"><p>Aucun profil. Crées-en un pour suivre une personne.</p></div>';
       return;
     }
     el.innerHTML = etat.profiles.map((p) => {
       const age = p.birthdate ? L.ageEnAnnees(p.birthdate) : null;
       const ec = p.emergencyContact;
       return '<article class="carte">' +
-        '<div class="carte-tete" style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">' +
+        '<div class="carte-tete">' +
         '<h3>' + esc(p.name) + '</h3>' +
         (age !== null ? '<span class="statut neutre">' + age + ' ans</span>' : '') + '</div>' +
         (p.birthdate ? '<p>Né(e) le ' + L.formaterDate(p.birthdate) + '</p>' : '') +
@@ -299,9 +299,9 @@
         (() => { const o = L.observance(etat.treatments.filter((t) => t.profileId === p.id), etat.doses.filter((d) => d.profileId === p.id), L.aujourdhui(), 30); return o === null ? '' : '<p class="meta">Observance 30 jours : ' + o + ' %</p>'; })() +
         (ec && (ec.name || ec.phone) ? '<p>Contact d’urgence : <strong>' + esc(ec.name || '—') + '</strong> ' + esc(ec.phone || '') +
           ' (' + (ec.mode === 'sms' ? 'SMS' : 'appel') + ')</p>' : '<p class="vide">Aucun contact d’urgence configuré.</p>') +
-        '<div class="ligne" style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<div class="ligne">' +
         '<button type="button" class="petit-bouton" data-action="edit-profil" data-id="' + esc(p.id) + '">Modifier</button>' +
-        '<button type="button" class="petit-bouton" style="color:var(--danger);border-color:var(--danger)" data-action="del-profil" data-id="' + esc(p.id) + '">Supprimer</button>' +
+        '<button type="button" class="petit-bouton danger" data-action="del-profil" data-id="' + esc(p.id) + '">Supprimer</button>' +
         '</div></article>';
     }).join('');
   }
@@ -334,7 +334,7 @@
         (programme ? actionPriseHTML(t, today) : '') +
         '<button type="button" class="petit-bouton" data-action="hist-traitement" data-id="' + esc(t.id) + '">Historique des prises</button>' +
         '<button type="button" class="petit-bouton" data-action="edit-traitement" data-id="' + esc(t.id) + '">Modifier</button>' +
-        '<button type="button" class="petit-bouton" style="color:var(--danger);border-color:var(--danger)" data-action="del-traitement" data-id="' + esc(t.id) + '">Supprimer</button>' +
+        '<button type="button" class="petit-bouton danger" data-action="del-traitement" data-id="' + esc(t.id) + '">Supprimer</button>' +
         '</div></article>';
     }).join('');
   }
@@ -362,7 +362,7 @@
         (v.note ? '<p class="meta">' + esc(v.note) + '</p>' : '') +
         '<div class="actions">' +
         '<button type="button" class="petit-bouton" data-action="edit-vaccin" data-id="' + esc(v.id) + '">Modifier</button>' +
-        '<button type="button" class="petit-bouton" style="color:var(--danger);border-color:var(--danger)" data-action="del-vaccin" data-id="' + esc(v.id) + '">Supprimer</button>' +
+        '<button type="button" class="petit-bouton danger" data-action="del-vaccin" data-id="' + esc(v.id) + '">Supprimer</button>' +
         '</div></article>';
     }).join('');
   }
@@ -389,7 +389,7 @@
         '<div class="actions">' +
         (c.phone ? '<a class="petit-bouton" href="' + esc(L.lienTel(c.phone)) + '">Appeler</a>' : '') +
         '<button type="button" class="petit-bouton" data-action="edit-contact" data-id="' + esc(c.id) + '">Modifier</button>' +
-        '<button type="button" class="petit-bouton" style="color:var(--danger);border-color:var(--danger)" data-action="del-contact" data-id="' + esc(c.id) + '">Supprimer</button>' +
+        '<button type="button" class="petit-bouton danger" data-action="del-contact" data-id="' + esc(c.id) + '">Supprimer</button>' +
         '</div></article>';
     }).join('');
   }
@@ -412,7 +412,7 @@
         '<td><strong class="mono">' + esc(c.valeur) + '</strong></td>' +
         '<td>' + esc(c.note || '') + '</td>' +
         '<td><button type="button" class="petit-bouton" data-action="edit-constante" data-id="' + esc(c.id) + '">Modifier</button> ' +
-        '<button type="button" class="petit-bouton" style="color:var(--danger);border-color:var(--danger)" data-action="del-constante" data-id="' + esc(c.id) + '">Supprimer</button></td>' +
+        '<button type="button" class="petit-bouton danger" data-action="del-constante" data-id="' + esc(c.id) + '">Supprimer</button></td>' +
         '</tr>').join('') + '</tbody></table>';
   }
 
@@ -440,8 +440,8 @@
       note: lireValeur(f, 'note').trim()
     };
     const erreurs = {};
-    if (!c.profileId) erreurs.profileId = 'Choisissez une personne.';
-    if (!c.type) erreurs.type = 'Choisissez une mesure.';
+    if (!c.profileId) erreurs.profileId = 'Choisis une personne.';
+    if (!c.type) erreurs.type = 'Choisis une mesure.';
     if (!c.valeur) erreurs.valeur = 'La valeur est obligatoire.';
     if (!c.date || !L.estDateValide(c.date)) erreurs.date = 'Date invalide.';
     if (Object.keys(erreurs).length) { afficherErreurs(erreurs); return; }
@@ -456,7 +456,7 @@
     $('#liste-urgences').innerHTML = URGENCES.map((u) =>
       '<article class="urgence-carte"><span class="etiquette">' + esc(u.nom) + '</span>' +
       '<span class="num">' + esc(u.num) + '</span><p>' + esc(u.desc) + '</p>' +
-      '<div class="ligne" style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<div class="ligne ligne-serree">' +
       u.liens.map((l) => '<a class="petit-bouton urgence" href="' + esc(l.href) + '">' + esc(l.label) + '</a>').join('') +
       '</div></article>'
     ).join('');
@@ -468,7 +468,7 @@
     }
     el.innerHTML = etat.profiles.map((p) => {
       const ec = p.emergencyContact || {};
-      let html = '<div class="ligne-carte"><h3 style="font-size:1.05rem">' + esc(p.name) + '</h3>';
+      let html = '<div class="ligne-carte"><h3>' + esc(p.name) + '</h3>';
       if (p.allergies || p.criseAllergique) {
         html += '<div class="alerte-sante">' +
           (p.allergies ? '<p><strong>⚠ Allergies :</strong> ' + esc(p.allergies) + '</p>' : '') +
@@ -550,6 +550,7 @@
   function ouvrirModal(titre, htmlCorps, valider) {
     modalTitre.textContent = titre;
     modalCorps.innerHTML = htmlCorps;
+    $('#modal-valider').hidden = false;
     onValider = valider;
     modal.showModal();
     const premier = modalCorps.querySelector('input, select, textarea, button');
@@ -579,7 +580,7 @@
 
   function selectProfilsHtml(nom, valeur, requis) {
     if (!etat.profiles.length) {
-      return '<p class="vide">Créez d’abord un profil dans l’onglet Profils.</p>';
+      return '<p class="vide">Crée d’abord un profil dans l’onglet Profils.</p>';
     }
     let html = '<select name="' + nom + '"' + (requis ? ' required' : '') + '><option value="">— choisir —</option>';
     for (const p of etat.profiles) {
@@ -614,7 +615,7 @@
 
   function apresFormProfil() {
     const champSms = $('#champ-sms');
-    const maj = () => { champSms.style.display = modalForm.elements['ecMode'].value === 'sms' ? '' : 'none'; };
+    const maj = () => { champSms.hidden = modalForm.elements['ecMode'].value !== 'sms'; };
     $$('#modal-corps input[name="ecMode"]').forEach((r) => r.addEventListener('change', maj));
     maj();
   }
@@ -655,14 +656,14 @@
       '<div class="champ" data-cle="startDate"><span>Date de début</span><input type="date" name="startDate" required value="' + esc(t.startDate || L.aujourdhui()) + '"><span class="erreur" data-erreur="startDate"></span></div>' +
       '<div class="checks"><label><input type="checkbox" name="lifetime"' + (t.lifetime ? ' checked' : '') + '> Traitement à vie (pas de date de fin, rappel permanent)</label></div>' +
       '<div class="champ" data-cle="endDate" id="champ-fin"><span>Date de fin</span><input type="date" name="endDate" value="' + esc(t.endDate || '') + '"><span class="erreur" data-erreur="endDate"></span></div>' +
-      champ('Durée en jours (facultatif, calcule la date de fin)', '<input type="number" name="dureeJours" min="1" max="36500" placeholder="ex. 10">', 'La date de fin = début + durée − 1. Vous pouvez aussi saisir la date de fin directement.') +
+      champ('Durée en jours (facultatif, calcule la date de fin)', '<input type="number" name="dureeJours" min="1" max="36500" placeholder="ex. 10">', 'La date de fin = début + durée − 1. Tu peux aussi saisir la date de fin directement.') +
       champ('Heure de rappel (facultative)', '<input type="time" name="reminderTime" value="' + esc(t.reminderTime || '') + '">', 'Notification envoyée à cette heure, les jours de prise.') +
       champ('Stock initial (facultatif)', '<input type="number" name="stockInitial" min="0" max="100000" placeholder="ex. 30" value="' + (t.stockInitial ?? '') + '">', 'Nombre d’unités au départ : décompté automatiquement à chaque prise.') +
       champ('Unité du stock', '<input type="text" name="stockUnite" maxlength="30" placeholder="comprimés, ml…" value="' + esc(t.stockUnite || '') + '">') +
       '<fieldset><legend>Fréquence</legend>' +
       '<div class="radios" role="radiogroup" aria-label="Type de fréquence">' +
       '<label><input type="radio" name="freqType" value="quotidien"' + (f.type === 'quotidien' ? ' checked' : '') + '> Quotidienne (1 fois/jour)</label>' +
-      '<label><input type="radio" name="freqType" value="fois"' + (f.type === 'fois' ? ' checked' : '') + '> <input type="number" name="foisParJour" min="2" max="24" value="' + (f.foisParJour || 2) + '" style="width:5em;min-height:40px"> fois par jour</label>' +
+      '<label><input type="radio" name="freqType" value="fois"' + (f.type === 'fois' ? ' checked' : '') + '> <input type="number" name="foisParJour" min="2" max="24" value="' + (f.foisParJour || 2) + '" class="champ-fois"> fois par jour</label>' +
       '<label><input type="radio" name="freqType" value="jours"' + (f.type === 'jours' ? ' checked' : '') + '> Jours précis de la semaine</label>' +
       '</div>' +
       '<div id="bloc-jours"' + (f.type === 'jours' ? '' : ' hidden') + '><div class="checks">' +
@@ -673,7 +674,7 @@
 
   function apresFormTraitement() {
     const f = modalForm;
-    const majFin = () => { $('#champ-fin').style.display = f.elements['lifetime'].checked ? 'none' : ''; };
+    const majFin = () => { $('#champ-fin').hidden = f.elements['lifetime'].checked; };
     f.elements['lifetime'].addEventListener('change', majFin);
     majFin();
     const majJours = () => { $('#bloc-jours').hidden = f.elements['freqType'].value !== 'jours'; };
@@ -712,7 +713,7 @@
       createdAt: f.dataset.created || new Date().toISOString()
     };
     const v = L.validerTraitement(t);
-    if (!t.profileId) v.ok = false, v.erreurs.profileId = 'Choisissez une personne.';
+    if (!t.profileId) v.ok = false, v.erreurs.profileId = 'Choisis une personne.';
     if (!v.ok) { afficherErreurs(v.erreurs); return; }
     await DB.put('treatments', t);
     await chargerDonnees();
@@ -740,7 +741,7 @@
       note: lireValeur(f, 'note').trim()
     };
     const val = L.validerVaccin(v);
-    if (!v.profileId) val.ok = false, val.erreurs.profileId = 'Choisissez une personne.';
+    if (!v.profileId) val.ok = false, val.erreurs.profileId = 'Choisis une personne.';
     if (!val.ok) { afficherErreurs(val.erreurs); return; }
     await DB.put('vaccines', v);
     await chargerDonnees();
@@ -785,7 +786,7 @@
   function confirmerSuppression(titre, texte, action) {
     ouvrirModal(titre,
       '<p>' + texte + '</p>' +
-      '<div class="ligne" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">' +
+      '<div class="ligne ligne-droite">' +
       '<button type="button" class="bouton secondaire" id="conf-annuler">Annuler</button>' +
       '<button type="button" class="bouton danger" id="conf-ok">Supprimer</button></div>',
       null);
@@ -806,12 +807,12 @@
       html += '<div class="liste">' + doses.map((d) =>
         '<div class="med"><div><div class="nom">' + L.formaterDate(d.date) + ' à ' + esc(d.time || '') + '</div>' +
         (d.note ? '<div class="detail">' + esc(d.note) + '</div>' : '') + '</div>' +
-        '<button type="button" class="petit-bouton" style="color:var(--danger);border-color:var(--danger)" data-action="del-dose" data-id="' + esc(d.id) + '">Supprimer</button></div>'
+        '<button type="button" class="petit-bouton danger" data-action="del-dose" data-id="' + esc(d.id) + '">Supprimer</button></div>'
       ).join('') + '</div>';
     }
     ouvrirModal('Historique — ' + t.name, html, null);
-    $('#modal-valider').style.display = 'none';
-    modalForm.addEventListener('close', () => { $('#modal-valider').style.display = ''; }, { once: true });
+    $('#modal-valider').hidden = true;
+    modal.addEventListener('close', () => { $('#modal-valider').hidden = false; }, { once: true });
   }
 
   async function prendreDose(id) {
@@ -974,7 +975,7 @@
       else if (action === 'del-profil') {
         const p = profil(id);
         confirmerSuppression('Supprimer le profil',
-          'Supprimer <strong>' + esc(p.name) + '</strong> et <strong>toutes ses données</strong> (traitements, prises, vaccins, contacts) ? Cette action est irréversible — pensez à exporter vos données en JSON avant.',
+          'Supprimer <strong>' + esc(p.name) + '</strong> et <strong>toutes ses données</strong> (traitements, prises, vaccins, contacts) ? Cette action est irréversible — pense à exporter tes données en JSON avant.',
           async () => {
             await DB.creerSnapshot();
             await DB.supprimerProfilCascade(id);
@@ -1073,14 +1074,14 @@
     apresFormProfil();
   });
   $('#btn-ajout-traitement').addEventListener('click', () => {
-    if (!etat.profiles.length) { toast('Créez d’abord un profil.', true); showVue('profils'); return; }
+    if (!etat.profiles.length) { toast('Crée d’abord un profil.', true); showVue('profils'); return; }
     modalForm.removeAttribute('data-id');
     modalForm.removeAttribute('data-created');
     ouvrirModal('Nouveau traitement', formTraitementHTML({ frequency: { type: 'quotidien' } }), enregistrerTraitement);
     apresFormTraitement();
   });
   $('#btn-ajout-vaccin').addEventListener('click', () => {
-    if (!etat.profiles.length) { toast('Créez d’abord un profil.', true); showVue('profils'); return; }
+    if (!etat.profiles.length) { toast('Crée d’abord un profil.', true); showVue('profils'); return; }
     modalForm.removeAttribute('data-id');
     ouvrirModal('Nouveau vaccin', formVaccinHTML({}), enregistrerVaccin);
   });
@@ -1089,7 +1090,7 @@
     ouvrirModal('Nouveau contact médical', formContactHTML({}), enregistrerContact);
   });
   $('#btn-ajout-constante').addEventListener('click', () => {
-    if (!etat.profiles.length) { toast('Créez d’abord un profil.', true); showVue('profils'); return; }
+    if (!etat.profiles.length) { toast('Crée d’abord un profil.', true); showVue('profils'); return; }
     modalForm.removeAttribute('data-id');
     ouvrirModal('Nouvelle mesure', formConstanteHTML({}), enregistrerConstante);
   });
@@ -1155,7 +1156,7 @@
   $('#btn-verrou').addEventListener('click', () => ouvrirModalVerrou(false));
   $('#btn-desactiver-verrou').addEventListener('click', () => ouvrirModalVerrou(true));
 
-  const VERSION_APP = '1.2.0';
+  const VERSION_APP = '1.3.0';
   let inscriptionSw = null;
   let miseAJourDemandee = false;
   let minuteurRappel = null;
@@ -1208,7 +1209,7 @@
       await appliquerMiseAJour(bouton);
       return;
     }
-    if (info) info.textContent = 'Vous utilisez déjà la dernière version (v' + VERSION_APP + ').';
+    if (info) info.textContent = 'Tu utilises déjà la dernière version (v' + VERSION_APP + ').';
     toast('Omni-MediKit est à jour (v' + VERSION_APP + ').');
     if (bouton) bouton.disabled = false;
   }
@@ -1249,14 +1250,14 @@
     const actif = !!(etat.lock && etat.lock.enabled);
     let html;
     if (desactiver && actif) {
-      html = '<p>Entrez le code actuel pour désactiver le verrouillage.</p>' +
+      html = '<p>Entre le code actuel pour désactiver le verrouillage.</p>' +
         '<div class="champ" data-cle="pinActuel"><span>Code actuel</span><input type="password" name="pinActuel" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pinActuel"></span></div>';
     } else if (actif) {
       html = '<p>Code actuel, puis nouveau code (laisser le nouveau vide pour conserver l’actuel).</p>' +
         '<div class="champ" data-cle="pinActuel"><span>Code actuel</span><input type="password" name="pinActuel" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pinActuel"></span></div>' +
         '<div class="champ" data-cle="pin1"><span>Nouveau code (4 à 6 chiffres, facultatif)</span><input type="password" name="pin1" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pin1"></span></div>';
     } else {
-      html = '<p>Choisissez un code à 4 chiffres (jusqu’à 6). Il sera demandé à chaque ouverture de l’application sur cet appareil.</p>' +
+      html = '<p>Choisis un code à 4 chiffres (jusqu’à 6). Il sera demandé à chaque ouverture de l’application sur cet appareil.</p>' +
         '<div class="champ" data-cle="pin1"><span>Code</span><input type="password" name="pin1" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pin1"></span></div>' +
         '<div class="champ" data-cle="pin2"><span>Confirmer le code</span><input type="password" name="pin2" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off"><span class="erreur" data-erreur="pin2"></span></div>';
     }
@@ -1394,7 +1395,7 @@
       html += '<h2>Contacts médicaux (globaux)</h2><table><thead><tr><th>Nom</th><th>Spécialité</th><th>Téléphone</th><th>Adresse</th></tr></thead><tbody>' +
         globaux.map((c) => '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.specialty || '') + '</td><td>' + esc(c.phone || '') + '</td><td>' + esc(c.address || '') + '</td></tr>').join('') + '</tbody></table>';
     }
-    html += '<p style="margin-top:12px;font-size:.85rem">En cas d’urgence vitale : 15 (SAMU), 18 (pompiers), 112 (Europe), 114 (sourds et malentendants). Omni-MediKit est un outil de suivi personnel, pas un dispositif médical.</p>';
+    html += '<p class="note-impression">En cas d’urgence vitale : 15 (SAMU), 18 (pompiers), 112 (Europe), 114 (sourds et malentendants). Omni-MediKit est un outil de suivi personnel, pas un dispositif médical.</p>';
     $('#fiche-impression').innerHTML = html;
   }
 
@@ -1428,18 +1429,18 @@
   async function ouvrirExportQR() {
     if (typeof QRCode === 'undefined') { toast('Génération de QR indisponible.', true); return; }
     const data = await DB.exporterTout();
-    const texte = JSON.stringify(data);
+    const texte = JSON.stringify(data).replace(/[\u007f-\uffff]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
     const CHUNK = 900;
     const frames = [];
     for (let i = 0; i < texte.length; i += CHUNK) frames.push(texte.slice(i, i + CHUNK));
     const payloads = frames.map((f, i) => JSON.stringify({ app: 'OMK-QR', i: i, n: frames.length, data: f }));
     ouvrirModal('Transfert QR — ' + payloads.length + ' image(s)',
-      '<p>Sur l’autre appareil : Omni-MediKit → Réglages → « Recevoir un transfert », puis scannez chaque image.</p>' +
+      '<p>Sur l’autre appareil : Omni-MediKit → Réglages → « Recevoir un transfert », puis scanne chaque image.</p>' +
       '<div class="qr-zone"><div id="qr-cadre"></div><p class="aide" id="qr-compteur"></p>' +
       '<div class="ligne"><button type="button" class="petit-bouton" id="qr-prec">◀ Précédent</button><button type="button" class="petit-bouton" id="qr-suiv">Suivant ▶</button></div></div>',
       null);
-    $('#modal-valider').style.display = 'none';
-    modalForm.addEventListener('close', () => { $('#modal-valider').style.display = ''; }, { once: true });
+    $('#modal-valider').hidden = true;
+    modal.addEventListener('close', () => { $('#modal-valider').hidden = false; }, { once: true });
     let idx = 0;
     const montrer = () => {
       const cadre = $('#qr-cadre');
@@ -1454,21 +1455,21 @@
 
   async function ouvrirImportQR() {
     if (!('BarcodeDetector' in window)) {
-      toast('Scan QR indisponible sur ce navigateur : utilisez « Importer un JSON » ou ouvrez le fichier .json depuis le gestionnaire de fichiers.', true);
+      toast('Scan QR indisponible sur ce navigateur : utilise « Importer un JSON » ou ouvre le fichier .json depuis le gestionnaire de fichiers.', true);
       return;
     }
     ouvrirModal('Recevoir un transfert QR',
-      '<p>Autorisez la caméra, puis présentez chaque image du transfert (dans n’importe quel ordre).</p>' +
+      '<p>Autorise la caméra, puis présente chaque image du transfert (dans n’importe quel ordre).</p>' +
       '<video id="qr-video" autoplay playsinline muted></video><p class="aide" id="qr-etat">En attente de caméra…</p>', null);
-    $('#modal-valider').style.display = 'none';
+    $('#modal-valider').hidden = true;
     let stream = null;
-    const fermer = () => { if (stream) stream.getTracks().forEach((t) => t.stop()); };
-    modalForm.addEventListener('close', fermer, { once: true });
+    const fermer = () => { $('#modal-valider').hidden = false; if (stream) stream.getTracks().forEach((t) => t.stop()); };
+    modal.addEventListener('close', fermer, { once: true });
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
     } catch (e) {
       const etatEl = $('#qr-etat');
-      if (etatEl) etatEl.textContent = 'Caméra indisponible (' + e.message + '). Utilisez « Importer un JSON ».';
+      if (etatEl) etatEl.textContent = 'Caméra indisponible (' + e.message + '). Utilise « Importer un JSON ».';
       return;
     }
     const video = $('#qr-video');
@@ -1508,7 +1509,7 @@
     for (const p of profiles) {
       const aVie = treatments.filter((t) => t.profileId === p.id && t.lifetime).map((t) => t.name);
       const ec = p.emergencyContact || {};
-      html += '<article class="ligne-carte"><h3 style="font-size:1.05rem">' + esc(p.name) + '</h3>' +
+      html += '<article class="ligne-carte"><h3>' + esc(p.name) + '</h3>' +
         (p.allergies ? '<p><span class="statut danger">⚠ Allergies : ' + esc(p.allergies) + '</span></p>' : '') +
         (p.criseAllergique ? '<p><strong>Crise allergique :</strong> ' + esc(p.criseAllergique) + '</p>' : '') +
         (aVie.length ? '<p>Traitements à vie : ' + aVie.map(esc).join(', ') + '</p>' : '') +
@@ -1554,9 +1555,9 @@
           modalForm.removeAttribute('data-created');
           ouvrirModal('Nouveau traitement', formTraitementHTML({ name: textePartage.slice(0, 120), frequency: { type: 'quotidien' } }), enregistrerTraitement);
           apresFormTraitement();
-          toast('Texte reçu : complétez le traitement.');
+          toast('Texte reçu : complète le traitement.');
         } else {
-          toast('Texte reçu — créez d’abord un profil pour l’utiliser.', true);
+          toast('Texte reçu — crée d’abord un profil pour l’utiliser.', true);
         }
       }
     } catch (e) {}

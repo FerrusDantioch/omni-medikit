@@ -184,17 +184,17 @@
     if (t.startDate && estDateValide(t.startDate) && t.startDate > aujourdhui() + 3650)
       erreurs.startDate = 'Date de début trop éloignée.';
     if (!t.lifetime) {
-      if (!t.endDate || !estDateValide(t.endDate)) erreurs.endDate = 'Date de fin invalide (ou cochez « traitement à vie »).';
+      if (!t.endDate || !estDateValide(t.endDate)) erreurs.endDate = 'Date de fin invalide (ou coche « traitement à vie »).';
       else if (t.startDate && estDateValide(t.startDate) && t.endDate < t.startDate)
         erreurs.endDate = 'La date de fin doit être postérieure ou égale à la date de début.';
     }
     const f = t.frequency || {};
     if (f.type === 'fois') {
       const n = Number(f.foisParJour);
-      if (!Number.isInteger(n) || n < 1 || n > 24) erreurs.frequence = 'Indiquez entre 1 et 24 prises par jour.';
+      if (!Number.isInteger(n) || n < 1 || n > 24) erreurs.frequence = 'Indique entre 1 et 24 prises par jour.';
     }
     if (f.type === 'jours' && (!Array.isArray(f.jours) || !f.jours.length))
-      erreurs.frequence = 'Cochez au moins un jour de la semaine.';
+      erreurs.frequence = 'Coche au moins un jour de la semaine.';
     if (t.reminderTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(t.reminderTime))
       erreurs.reminderTime = 'Heure de rappel invalide (format HH:MM).';
     return { ok: Object.keys(erreurs).length === 0, erreurs };
