@@ -1,6 +1,6 @@
 # Omni-MediKit
 
-**Omni-MediKit** est une application de suivi de traitement médical, sous forme de
+**Omni-MediKit** (v1.3.0) est une application de suivi de traitement médical, sous forme de
 PWA (Progressive Web App) fonctionnant à **100 % hors ligne**, installable sur
 tablette et smartphone. Aucun backend, aucun serveur, aucune IA intégrée : toutes
 les données restent localement sur l'appareil de l'utilisateur, dans IndexedDB.
@@ -9,8 +9,8 @@ les données restent localement sur l'appareil de l'utilisateur, dans IndexedDB.
 
 Dépôt : https://github.com/FerrusDantioch/omni-medikit
 
-Pour l'utiliser hors ligne, ouvrez une première fois la page de l'application
-hébergée (GitHub Pages), puis installez-la depuis le menu du navigateur
+Pour l'utiliser hors ligne, ouvre une première fois la page de l'application
+hébergée (GitHub Pages), puis installe-la depuis le menu du navigateur
 (« Ajouter à l'écran d'accueil »). Après cette première installation, tout
 fonctionne sans aucune connexion.
 
@@ -82,19 +82,26 @@ fonctionne sans aucune connexion.
 ## Technique
 
 - HTML / CSS / JS vanilla, un seul dossier autonome, aucun build, aucune
-  dépendance serveur.
-- `manifest.json` + service worker enregistré, stratégie **offline-first**
-  (pré-cache de la coquille applicative, puis cache à la première utilisation).
+  dépendance serveur, **zéro dépendance réseau externe** (aucune police Google Fonts
+  ni CDN tiers) et **CSP stricte** dans `index.html` (script d'initialisation de
+  thème externalisé dans `js/theme-init.js`, aucun `style=` inline).
+- `manifest.json` (`"id": "/omni-medikit/"`, `"version": "1.3.0"`) + service worker
+  durci (`sw.js`), stratégie **offline-first** isolée via `caches.open(CACHE)`
+  (pré-cache de la coquille applicative, vérification du cache exact avant le
+  fallback `navigate` vers `index.html`, réponse HTTP `503` hors ligne pour les
+  ressources non mises en cache).
 - Persistance : **IndexedDB** (profils, traitements, prises, vaccins, contacts,
   réglages dont le thème), avec index (`byProfile`, `byTreatment`, `byDate`),
   dates gérées en local.
-- **CI** : `.github/workflows/tests.yml` vérifie à chaque push la syntaxe JS,
-  le manifeste, les tests unitaires (`tools/test-logique.js`), le test de rendu
-  (`tools/test-ui.js`), la fraîcheur des icônes, plus un test navigateur Playwright
-  (`tools/e2e/e2e.mjs`) : service worker actif, rechargement 100 % hors ligne,
-  affichage des données, thèmes persistants.
+- **CI** : `.github/workflows/tests.yml` vérifie à chaque push la syntaxe JS de tous
+  les scripts (dont `js/theme-init.js` et `tools/e2e/e2e.mjs`), la validité du
+  manifeste (`id`, `version`, icônes), les tests unitaires (`tools/test-logique.js`),
+  le test de rendu (`tools/test-ui.js`), la fraîcheur des icônes (`make-icons.js`),
+  plus une suite navigateur Playwright (`tools/e2e/e2e.mjs`) : zéro requête
+  externe, zéro violation CSP, service worker actif, cache exact avant `navigate`,
+  fallback `503` hors ligne, QR code, thèmes persistants.
 - Thèmes implémentés par **variables CSS** (`data-theme` sur `<html>`).
-- **Versionnement** : la version figure dans le champ `version` de
+- **Versionnement** : la version (`1.3.0`) figure dans le champ `version` de
   `manifest.json`, dans la constante `VERSION` de `sw.js` (nom du cache
   `omni-medikit-<version>`) et dans `VERSION_APP` de `js/app.js` — à incrémenter
   à chaque publication pour que le bouton « Mettre à jour » fonctionne.
@@ -103,22 +110,25 @@ fonctionne sans aucune connexion.
 
 | Fichier | Rôle |
 |---|---|
-| `index.html` | Page unique de l'application (structure et vues) |
+| `index.html` | Page unique de l'application (structure, CSP stricte et vues) |
 | `css/style.css` | Styles et thèmes (variables CSS) |
+| `js/theme-init.js` | Initialisation synchrone du thème et de la taille de texte (anti-FOUC) |
 | `js/db.js` | Couche IndexedDB |
 | `js/logique.js` | Logique pure (dates, fréquences, statuts) |
 | `js/app.js` | Interface, navigation, formulaires, export/import |
-| `manifest.json` | Manifeste PWA (nom Omni-MediKit, icônes, mode standalone) |
-| `sw.js` | Service worker, cache offline-first |
-| `icons/` | Icônes de l'application (PNG + SVG) |
-| `LICENSE` | Licence du code |
+| `manifest.json` | Manifeste PWA (`id: "/omni-medikit/"`, v1.3.0, icônes dont maskable) |
+| `sw.js` | Service worker durci, cache isolé offline-first et fallback `503` |
+| `icons/` | Icônes de l'application (PNG dont maskable + `apple-touch-icon.png` + SVG + ICO) |
+| `.gitattributes` | Normalisation des fins de ligne LF et marquage binaire des icônes |
+| `LICENSE` | Licence du code (`CC BY-NC-ND 4.0`) |
 
 ## Droits et licence
 
-Code : **© 2026 Ferrus Dantioch — Creative Commons BY-NC-ND 4.0**
-([résumé en français](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.fr)).
-Texte complet dans le fichier [LICENSE](LICENSE), identique à celle du dépôt
-[omni-systeme](https://github.com/FerrusDantioch/omni-systeme).
+- **Auteur** : Ferrus Dantioch
+- **Licence** : **Creative Commons Attribution - Pas d'Utilisation Commerciale - Pas de Modification 4.0 International (`CC BY-NC-ND 4.0` / `Attribution-NonCommercial-NoDerivatives 4.0 International`)** — © 2026 Ferrus Dantioch ([résumé en français](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.fr)).
+  En français : l'œuvre peut être partagée à condition d'en attribuer la paternité à **Ferrus Dantioch**, sans utilisation commerciale et sans modification ni création d'œuvres dérivées sans autorisation.
+- **Texte complet** : voir le fichier [LICENSE](LICENSE), aligné sur les autres dépôts [omni-systeme](https://github.com/FerrusDantioch/omni-systeme).
+- **Contact** : `omni-systeme.choking513@passmail.net`
 
 Omni-MediKit a été développée par **Ferrus Dantioch** avec l'aide de l'IA.
 Découvrir les autres projets de l'auteur : https://ferrusdantioch.github.io/omni-systeme/
